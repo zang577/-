@@ -141,10 +141,10 @@ input[type="color"] {
 const canvas = document.getElementById('signCanvas');
 const ctx = canvas.getContext('2d');
 
-// 參數可微調
-const PAD_SPACE = 16;     // 四邊統一內距
-const FONT_SIZE = 70;
-const CHAR_GAP = 88;
+// 關鍵：統一上下左右留白寬度，改這一個就好
+const GAP = 24;         // 上下左右離邊框一樣遠
+const FONT_SIZE = 68;
+const CHAR_GAP = 86;
 const BORDER_W = 6;
 const RADIUS = 10;
 const SIGN_W = 160;
@@ -174,44 +174,50 @@ function drawSign(){
     let colBorder = document.getElementById('colorBorder').value;
     let chars = text.split('');
 
-    // 文字整塊實際高度
+    // 文字整塊高度
     let textBlockH = FONT_SIZE + (chars.length - 1) * CHAR_GAP;
-    // 畫布高度 = 文字高 + 上下固定內距
-    let signH = textBlockH + PAD_SPACE * 2;
+    // 畫布高度 = 文字高 + 上下各 GAP
+    let signH = textBlockH + GAP * 2;
 
     canvas.width = SIGN_W;
     canvas.height = signH;
     ctx.clearRect(0, 0, SIGN_W, signH);
 
-    // 邊框內範圍
-    let innerX = BORDER_W;
-    let innerY = BORDER_W;
-    let innerW = SIGN_W - BORDER_W * 2;
-    let innerH = signH - BORDER_W * 2;
+    // 邊框外緣
+    let frameX = BORDER_W;
+    let frameY = BORDER_W;
+    let frameW = SIGN_W - BORDER_W * 2;
+    let frameH = signH - BORDER_W * 2;
 
     // 圓角白底
-    roundRectPath(ctx, innerX, innerY, innerW, innerH, RADIUS);
+    roundRectPath(ctx, frameX, frameY, frameW, frameH, RADIUS);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
 
     // 圓角邊框
-    roundRectPath(ctx, innerX, innerY, innerW, innerH, RADIUS);
+    roundRectPath(ctx, frameX, frameY, frameW, frameH, RADIUS);
     ctx.strokeStyle = colBorder;
     ctx.lineWidth = BORDER_W;
     ctx.stroke();
 
-    // 文字設定：關鍵改用 top 基線，避開 middle 不對稱陷阱
+    // 內文可用區：四周強制留 GAP
+    let innerX = frameX + GAP;
+    let innerY = frameY + GAP;
+    let innerW = frameW - GAP * 2;
+    let innerH = frameH - GAP * 2;
+
+    // 文字樣式
     ctx.fillStyle = colText;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.font = `bold ${FONT_SIZE}px "Microsoft JhengHei", sans-serif`;
 
-    // 整塊文字垂直絕對置中
-    let textTop = innerY + (innerH - textBlockH) / 2;
+    // 文字在內文區 垂直置中
+    let textStartY = innerY + (innerH - textBlockH) / 2;
 
     for(let i=0; i<chars.length; i++){
-        let y = textTop + i * CHAR_GAP;
-        ctx.fillText(chars[i], SIGN_W/2, y);
+        let y = textStartY + i * CHAR_GAP;
+        ctx.fillText(chars[i], SIGN_W / 2, y);
     }
 }
 
