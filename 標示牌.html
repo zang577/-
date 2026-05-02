@@ -1,234 +1,106 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>標示牌產生器</title>
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Microsoft JhengHei", sans-serif;
-}
-body {
-    background: #f5f6f8;
-    padding: 30px 15px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-h1 {
-    font-size: 26px;
-    color: #222;
-    margin-bottom: 25px;
-}
-.wrap {
-    width: 100%;
-    max-width: 450px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-.preview-box {
-    background: #fff;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    text-align: center;
-}
-.preview-box h3 {
-    font-size: 16px;
-    color: #666;
-    margin-bottom: 15px;
-    font-weight: 500;
-}
-canvas {
-    border-radius: 8px;
-}
-.control-box {
-    background: #fff;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-.form-item {
-    margin-bottom: 18px;
-}
-label {
-    display: block;
-    font-size: 15px;
-    color: #444;
-    margin-bottom: 6px;
-}
-input[type="text"],
-input[type="color"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 16px;
-}
-.preset-btn-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-}
-.preset-btn {
-    padding: 6px 12px;
-    border: 1px solid #ccc;
-    background: #f8f8f8;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-}
-.btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 8px;
-}
-.btn-primary {
-    background: #d92525;
-    color: #fff;
-}
-.btn-dark {
-    background: #333;
-    color: #fff;
-    margin-top: 10px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>標示牌產生器</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Microsoft JhengHei,sans-serif}
+        body{background:#f5f6f8;padding:20px;display:flex;flex-direction:column;align-items:center}
+        .preview{background:#fff;padding:20px;border-radius:14px;margin:20px 0;text-align:center}
+        .control{background:#fff;padding:20px;border-radius:14px;width:100%;max-width:400px}
+        input{width:100%;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:8px}
+        button{padding:12px;width:100%;background:#e53935;color:#fff;border:none;border-radius:8px;margin-top:6px;cursor:pointer}
+        .preset{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+        .preset button{width:auto;padding:6px 12px;background:#eee;color:#000}
+        canvas{display:block;margin:0 auto}
+    </style>
 </head>
 <body>
-<h1>標示牌產生器</h1>
-<div class="wrap">
-    <div class="preview-box">
-        <h3>預覽效果</h3>
-        <canvas id="signCanvas"></canvas>
-    </div>
 
-    <div class="control-box">
-        <div class="form-item">
-            <label>自訂豎排文字</label>
-            <input type="text" id="txt" value="冷氣開放中">
-            <div class="preset-btn-group">
-                <button class="preset-btn" onclick="setWord('營業中')">營業中</button>
-                <button class="preset-btn" onclick="setWord('休息中')">休息中</button>
-                <button class="preset-btn" onclick="setWord('開店中')">開店中</button>
-                <button class="preset-btn" onclick="setWord('打烊中')">打烊中</button>
-                <button class="preset-btn" onclick="setWord('冷氣開放中')">冷氣開放中</button>
-            </div>
-        </div>
-        <div class="form-item">
-            <label>文字顏色</label>
-            <input type="color" id="colorText" value="#d92525">
-        </div>
-        <div class="form-item">
-            <label>邊框顏色</label>
-            <input type="color" id="colorBorder" value="#d92525">
-        </div>
+<h2>標示牌產生器</h2>
+<div class="preview">
+    <h3>預覽</h3>
+    <canvas id="c"></canvas>
+</div>
 
-        <button class="btn btn-primary" onclick="drawSign()">更新預覽</button>
-        <button class="btn btn-dark" onclick="downloadPNG()">下載透明圖片</button>
+<div class="control">
+    <input id="text" value="冷氣開放中">
+    <div class="preset">
+        <button onclick="set('營業中')">營業中</button>
+        <button onclick="set('休息中')">休息中</button>
+        <button onclick="set('冷氣開放中')">冷氣開放中</button>
     </div>
+    <button onclick="draw()">更新預覽</button>
+    <button onclick="download()" style="background:#333">下載透明圖</button>
 </div>
 
 <script>
-const canvas = document.getElementById('signCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = c.getContext('2d');
 
-// 關鍵：統一上下左右留白寬度，改這一個就好
-const GAP = 24;         // 上下左右離邊框一樣遠
-const FONT_SIZE = 68;
-const CHAR_GAP = 86;
-const BORDER_W = 6;
-const RADIUS = 10;
-const SIGN_W = 160;
+// 固定尺寸 → 永遠不變形
+const W = 180;
+const H = 500;
+const FONT = 70;
+const GAP = 84;
 
-function setWord(w){
-    document.getElementById('txt').value = w;
-    drawSign();
+function set(t) {
+    document.getElementById('text').value = t;
+    draw();
 }
 
-function roundRectPath(ctx, x, y, w, h, r) {
+function roundRect(x,y,w,h,r){
     ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
     ctx.closePath();
 }
 
-function drawSign(){
-    let text = document.getElementById('txt').value.trim() || '營業中';
-    let colText = document.getElementById('colorText').value;
-    let colBorder = document.getElementById('colorBorder').value;
-    let chars = text.split('');
+function draw() {
+    c.width = W;
+    c.height = H;
+    ctx.clearRect(0,0,W,H);
 
-    // 文字整塊高度
-    let textBlockH = FONT_SIZE + (chars.length - 1) * CHAR_GAP;
-    // 畫布高度 = 文字高 + 上下各 GAP
-    let signH = textBlockH + GAP * 2;
-
-    canvas.width = SIGN_W;
-    canvas.height = signH;
-    ctx.clearRect(0, 0, SIGN_W, signH);
-
-    // 邊框外緣
-    let frameX = BORDER_W;
-    let frameY = BORDER_W;
-    let frameW = SIGN_W - BORDER_W * 2;
-    let frameH = signH - BORDER_W * 2;
-
-    // 圓角白底
-    roundRectPath(ctx, frameX, frameY, frameW, frameH, RADIUS);
-    ctx.fillStyle = '#ffffff';
+    // 外框
+    roundRect(6,6,W-12,H-12,10);
+    ctx.fillStyle = "#fff";
     ctx.fill();
-
-    // 圓角邊框
-    roundRectPath(ctx, frameX, frameY, frameW, frameH, RADIUS);
-    ctx.strokeStyle = colBorder;
-    ctx.lineWidth = BORDER_W;
+    ctx.strokeStyle = "#e53935";
+    ctx.lineWidth = 6;
     ctx.stroke();
 
-    // 內文可用區：四周強制留 GAP
-    let innerX = frameX + GAP;
-    let innerY = frameY + GAP;
-    let innerW = frameW - GAP * 2;
-    let innerH = frameH - GAP * 2;
+    const txt = document.getElementById('text').value;
+    const chars = txt.split('');
+    
+    ctx.fillStyle = "#e53935";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `bold ${FONT}px sans-serif`;
 
-    // 文字樣式
-    ctx.fillStyle = colText;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.font = `bold ${FONT_SIZE}px "Microsoft JhengHei", sans-serif`;
+    // 🔥 唯一正確：整組文字「強制置中」，沒有複雜計算
+    const total = (chars.length - 1) * GAP;
+    const y = H / 2 - total / 2;
 
-    // 文字在內文區 垂直置中
-    let textStartY = innerY + (innerH - textBlockH) / 2;
-
-    for(let i=0; i<chars.length; i++){
-        let y = textStartY + i * CHAR_GAP;
-        ctx.fillText(chars[i], SIGN_W / 2, y);
-    }
+    chars.forEach((ch, i) => {
+        ctx.fillText(ch, W/2, y + i * GAP);
+    });
 }
 
-function downloadPNG(){
-    let a = document.createElement('a');
-    a.download = '標示牌_透明.png';
-    a.href = canvas.toDataURL('image/png');
+function download(){
+    const a = document.createElement('a');
+    a.download = "sign.png";
+    a.href = c.toDataURL('image/png');
     a.click();
 }
 
-drawSign();
+draw();
 </script>
 </body>
 </html>
