@@ -1,20 +1,105 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>標示牌產生器</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Microsoft JhengHei,sans-serif}
-        body{background:#f5f6f8;padding:20px;display:flex;flex-direction:column;align-items:center}
-        .preview{background:#fff;padding:20px;border-radius:14px;margin:20px 0;text-align:center}
-        .control{background:#fff;padding:20px;border-radius:14px;width:100%;max-width:400px}
-        input{width:100%;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:8px}
-        button{padding:12px;width:100%;background:#e53935;color:#fff;border:none;border-radius:8px;margin-top:6px;cursor:pointer}
-        .preset{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
-        .preset button{width:auto;padding:6px 12px;background:#eee;color:#000}
-        canvas{display:block;margin:0 auto}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<title>標示牌產生器</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft JhengHei", sans-serif;
+}
+button {
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+body {
+    background: #f5f6f8;
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #222;
+}
+.preview {
+    background: #fff;
+    padding: 20px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.control {
+    background: #fff;
+    padding: 20px;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+}
+.preset {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+}
+.preset button {
+    padding: 6px 12px;
+    background: #eee !important;
+    color: #000 !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    font-size: 14px;
+}
+.preset button:hover,
+.preset button:focus,
+.preset button:active,
+.preset button:visited {
+    background: #eee !important;
+    color: #000 !important;
+    border: 1px solid #ccc !important;
+}
+.btn-red {
+    width: 100%;
+    padding: 12px;
+    background: #e53935;
+    color: #fff;
+    border-radius: 8px;
+    margin-top: 6px;
+    font-size: 16px;
+}
+.btn-dark {
+    width: 100%;
+    padding: 12px;
+    background: #333;
+    color: #fff;
+    border-radius: 8px;
+    margin-top: 6px;
+    font-size: 16px;
+}
+canvas {
+    display: block;
+    margin: 0 auto;
+    width: 180px;
+}
+</style>
 </head>
 <body>
 
@@ -30,19 +115,26 @@
         <button onclick="set('營業中')">營業中</button>
         <button onclick="set('休息中')">休息中</button>
         <button onclick="set('冷氣開放中')">冷氣開放中</button>
+        <button onclick="set('錄影監視中')">錄影監視中</button>
+        <button onclick="set('本日公休')">本日公休</button>
     </div>
-    <button onclick="draw()">更新預覽</button>
-    <button onclick="download()" style="background:#333">下載透明圖</button>
+    <button class="btn-red" onclick="draw()">更新預覽</button>
+    <button class="btn-dark" onclick="download()">下載透明圖</button>
 </div>
 
 <script>
-const ctx = c.getContext('2d');
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-// 固定尺寸 → 永遠不變形
-const W = 180;
-const H = 500;
-const FONT = 70;
-const GAP = 84;
+// 關鍵：上下留白 = 左右留白 統一尺寸
+const FIX_WIDTH = 180;
+const PADDING_SPACE = 36;   // 上下、左右統一留白大小
+const FONT_SIZE = 70;
+const CHAR_GAP = 84;
+const BORDER = 6;
+const RADIUS = 10;
+
+const dpr = window.devicePixelRatio || 1;
 
 function set(t) {
     document.getElementById('text').value = t;
@@ -51,52 +143,57 @@ function set(t) {
 
 function roundRect(x,y,w,h,r){
     ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.lineTo(x+w-r,y);
-    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-    ctx.lineTo(x+w,y+h-r);
-    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-    ctx.lineTo(x+r,y+h);
-    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-    ctx.lineTo(x,y+r);
-    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
     ctx.closePath();
 }
 
 function draw() {
-    c.width = W;
-    c.height = H;
-    ctx.clearRect(0,0,W,H);
+    const txt = document.getElementById('text').value.trim();
+    const chars = txt.split('');
+    // 文字區整體高度
+    const textBlockHeight = (chars.length - 1) * CHAR_GAP + FONT_SIZE;
+    // 整張圖高度 = 上留白 + 文字高 + 下留白
+    const totalHeight = PADDING_SPACE + textBlockHeight + PADDING_SPACE;
 
-    // 外框
-    roundRect(6,6,W-12,H-12,10);
+    canvas.width = FIX_WIDTH * dpr;
+    canvas.height = totalHeight * dpr;
+    ctx.scale(dpr, dpr);
+
+    ctx.clearRect(0, 0, FIX_WIDTH, totalHeight);
+
+    // 繪製外框
+    roundRect(BORDER, BORDER, FIX_WIDTH - BORDER*2, totalHeight - BORDER*2, RADIUS);
     ctx.fillStyle = "#fff";
     ctx.fill();
     ctx.strokeStyle = "#e53935";
-    ctx.lineWidth = 6;
+    ctx.lineWidth = BORDER;
     ctx.stroke();
 
-    const txt = document.getElementById('text').value;
-    const chars = txt.split('');
-    
+    // 文字設定
     ctx.fillStyle = "#e53935";
     ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `bold ${FONT}px sans-serif`;
+    ctx.textBaseline = "top";
+    ctx.font = `bold ${FONT_SIZE}px "Microsoft JhengHei", sans-serif`;
 
-    // 🔥 唯一正確：整組文字「強制置中」，沒有複雜計算
-    const total = (chars.length - 1) * GAP;
-    const y = H / 2 - total / 2;
-
+    // 文字頂部固定在留白位置
+    let startY = PADDING_SPACE;
     chars.forEach((ch, i) => {
-        ctx.fillText(ch, W/2, y + i * GAP);
+        ctx.fillText(ch, FIX_WIDTH / 2, startY + i * CHAR_GAP);
     });
 }
 
 function download(){
     const a = document.createElement('a');
-    a.download = "sign.png";
-    a.href = c.toDataURL('image/png');
+    a.download = "標示牌_透明.png";
+    a.href = canvas.toDataURL('image/png');
     a.click();
 }
 
