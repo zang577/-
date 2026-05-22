@@ -6,18 +6,18 @@
   <title>像素對話框生成器 | 進階豪華版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            primary: '#4B6BFB', 
-            secondary: '#F5F7FF', 
-            neutral: '#2D3748', 
+            primary: '#4B6BFB',
+            secondary: '#F5F7FF',
+            neutral: '#2D3748',
           },
           fontFamily: {
-            pixel: ['"Press Start 2P"', 'monospace'],
-            sans: ['Inter', 'system-ui', 'sans-serif'],
+            sans: ['"Noto Sans TC"', 'system-ui', 'sans-serif'],
           },
         },
       }
@@ -56,9 +56,8 @@
       }
     }
   </style>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
-<body class="bg-secondary min-h-screen flex flex-col overflow-x-hidden">
+<body class="bg-secondary min-h-screen flex flex-col overflow-x-hidden font-sans">
   <main class="flex-1 flex flex-col p-4 md:p-6 max-w-5xl mx-auto w-full">
     <div class="w-full bg-white rounded-lg p-4 md:p-6 shadow-sm mb-4">
       <div id="emptyPreviewHint" class="text-center py-12 text-neutral/60">
@@ -71,7 +70,7 @@
     </div>
 
     <div class="w-full flex justify-center mb-4">
-      <button id="downloadBtn" class="btn-primary font-sans font-medium" disabled>
+      <button id="downloadBtn" class="btn-primary font-medium" disabled>
         <i class="fa fa-download mr-2"></i> 下載圖片
       </button>
     </div>
@@ -152,12 +151,18 @@
     let boxOffsetX = 0, boxOffsetY = 0;
     const stepPercent = 1;
     let currentStyle = 'style1';
-    const baseFontSize = 22;
-    const baseTextPadding = 36;
-    const baseLineHeight = 1.4;
-    const baseMinBoxHeight = 110;
+    const baseFontSize = 24;
+    const baseTextPadding = 40;
+    const baseLineHeight = 1.8;
+    const baseLetterSpacing = 4; // 改用逐字繪製，這裡是「字距(px)」
+    const baseMinBoxHeight = 120;
     const baseBorderWidth = 6;
     let textSizeScale = 0.9;
+
+    // 大圖防小：最小基準尺寸（不論圖多大，文字/對話框不會比這更小）
+    const MIN_FONT_SIZE = 16;
+    const MIN_BOX_PADDING = 30;
+    const BOX_WIDTH_RATIO = 0.9; // 對話框寬度占圖寬比例
 
     const styleGroups = {
       classic: [
@@ -319,12 +324,19 @@
     }
 
     function setupCanvas() {
-      canvas.width = backgroundImage.width;
-      canvas.height = backgroundImage.height;
-      const maxW = Math.min(canvas.width, window.innerWidth - 32);
-      const scale = maxW / canvas.width;
+      // DPR 高清适配
+      const dpr = window.devicePixelRatio || 1;
+      const maxW = Math.min(backgroundImage.width, window.innerWidth - 32);
+      const scale = maxW / backgroundImage.width;
+
+      canvas.width = backgroundImage.width * dpr;
+      canvas.height = backgroundImage.height * dpr;
       canvas.style.width = maxW + 'px';
-      canvas.style.height = (canvas.height * scale) + 'px';
+      canvas.style.height = (backgroundImage.height * scale) + 'px';
+
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.scale(dpr, dpr);
+
       redrawCanvas();
       document.getElementById('emptyPreviewHint').classList.add('hidden');
       document.getElementById('previewContainer').classList.remove('hidden');
@@ -343,7 +355,7 @@
 
     function drawGridPattern(x,y,w,h,scale){
       const g = Math.max(4, 8 * scale);
-      ctx.strokeStyle = 'rgba(0,0,0.06)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.06)';
       ctx.lineWidth = 1;
       for(let px=x; px<=x+w; px+=g) { ctx.beginPath(); ctx.moveTo(px,y); ctx.lineTo(px,y+h); ctx.stroke(); }
       for(let py=y; py<=y+h; py+=g) { ctx.beginPath(); ctx.moveTo(x,py); ctx.lineTo(x+w,py); ctx.stroke(); }
@@ -357,7 +369,6 @@
       }
     }
 
-    // 星星 + 白色外框
     function drawStarWithStroke(cx, cy, r, color, scale) {
       const offset = Math.max(2, 3 * scale);
       ctx.strokeStyle = '#ffffff';
@@ -375,7 +386,6 @@
       ctx.fill();
     }
 
-    // 愛心 + 白色外框
     function drawHeartWithStroke(x, y, scale, color) {
       const size = Math.round(10 * scale);
       const offset = Math.max(1, 2 * scale);
@@ -392,7 +402,6 @@
       ctx.fill();
     }
 
-    // 四角星星 → 四個角落邊框上 + 白框
     function drawCornerStarOnBorder(boxX, boxY, boxW, boxH, borderW, scale, color) {
       const s = Math.round(9 * scale);
       drawStarWithStroke(boxX, boxY, s, color, scale);
@@ -401,7 +410,6 @@
       drawStarWithStroke(boxX + boxW, boxY + boxH, s, color, scale);
     }
 
-    // 四角愛心 → 四個角落邊框上 + 白框
     function drawCornerHeartOnBorder(boxX, boxY, boxW, boxH, borderW, scale, color) {
       drawHeartWithStroke(boxX, boxY, scale * 0.7, color);
       drawHeartWithStroke(boxX + boxW, boxY, scale * 0.7, color);
@@ -431,7 +439,6 @@
       }
     }
 
-    // 溫柔浪漫：徹底刪除紅色圈圈
     function drawHeartAndBubblesClean(x, y, w, h, scale) {
       const heartCount = Math.floor((w * h) / 12000);
       for (let i = 0; i < heartCount; i++) {
@@ -444,30 +451,45 @@
 
     function redrawCanvas() {
       if (!backgroundImage) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(backgroundImage, 0, 0);
-      const scale = canvas.width / 1000;
-      const fontSize = Math.round(baseFontSize * scale * textSizeScale);
-      const padding = Math.round(baseTextPadding * scale);
+      const dpr = window.devicePixelRatio || 1;
+      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+      ctx.drawImage(backgroundImage, 0, 0, canvas.width / dpr, canvas.height / dpr);
+
+      // 以圖寬為基準，鎖定「對話框占比」和「最小尺寸」
+      const imgW = canvas.width / dpr;
+      const imgH = canvas.height / dpr;
+      const scaleBase = imgW / 1000;
+
+      // 大圖防小：保底尺寸
+      const fontSize = Math.max(MIN_FONT_SIZE, baseFontSize * scaleBase * textSizeScale);
+      const padding = Math.max(MIN_BOX_PADDING, baseTextPadding * scaleBase);
       const lineHeight = baseLineHeight * fontSize;
-      const minH = Math.round(baseMinBoxHeight * scale);
-      const borderW = Math.max(2, Math.round(baseBorderWidth * scale));
-      const offsetX = (boxOffsetX / 100) * canvas.width;
-      const offsetY = (boxOffsetY / 100) * canvas.height;
-      drawScaledDialogueBox(scale, fontSize, padding, lineHeight, minH, borderW, offsetX, offsetY);
+      const letterSpacing = baseLetterSpacing * scaleBase;
+      const minH = Math.max(baseMinBoxHeight * scaleBase, fontSize * 1.5);
+      const borderW = Math.max(2, Math.round(baseBorderWidth * scaleBase));
+
+      const offsetX = (boxOffsetX / 100) * imgW;
+      const offsetY = (boxOffsetY / 100) * imgH;
+
+      drawScaledDialogueBox(imgW, imgH, scaleBase, fontSize, padding, lineHeight, letterSpacing, minH, borderW, offsetX, offsetY);
     }
 
-    function drawScaledDialogueBox(scale, fontSize, padding, lineHeight, minH, borderW, offsetX, offsetY) {
+    function drawScaledDialogueBox(imgW, imgH, scale, fontSize, padding, lineHeight, letterSpacing, minH, borderW, offsetX, offsetY) {
       const style = currentStyle;
       const text = document.getElementById('dialogueText').value.trim();
       const textColor = document.getElementById('textColor').value;
       const opacity = parseFloat(document.getElementById('boxOpacity').value);
       const marginPerc = parseFloat(document.getElementById('bottomMarginSlider').value);
-      const marginBottom = (marginPerc / 100) * canvas.height;
+      const marginBottom = (marginPerc / 100) * imgH;
 
-      ctx.font = `${fontSize}px "Press Start 2P", monospace`;
-      const boxMaxWidth = canvas.width * 0.9;
-      const textMaxWidth = boxMaxWidth - padding * 2.5;
+      ctx.font = `${fontSize}px "Noto Sans TC", sans-serif`;
+      ctx.textBaseline = 'top';
+
+      // 對話框寬度：固定比例
+      const boxW = imgW * BOX_WIDTH_RATIO;
+      const textMaxWidth = boxW - padding * 2.5;
+
+      // 分行（不考慮字距，先斷行）
       const lines = [];
       let tempLine = '';
       const chars = text.split('');
@@ -481,17 +503,17 @@
         }
       }
       if(tempLine) lines.push(tempLine);
-      
+
       const textH = lines.length * lineHeight;
       const boxH = Math.max(minH, textH + padding * 2);
-      const boxW = boxMaxWidth;
-      const boxX = (canvas.width - boxW) / 2 + offsetX;
-      let boxY = canvas.height - boxH - marginBottom - offsetY;
+      const boxX = (imgW - boxW) / 2 + offsetX;
+      let boxY = imgH - boxH - marginBottom - offsetY;
       if (boxY < 20) boxY = 20;
 
       ctx.save();
       ctx.globalAlpha = opacity;
 
+      // --- 繪製對話框背景與邊框 ---
       switch (style) {
         case 'style14':
           let skyGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY+boxH);
@@ -644,15 +666,19 @@
       }
 
       ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
-      ctx.font = `${fontSize}px "Press Start 2P", monospace`;
-      ctx.fillStyle = textColor;
-      ctx.textBaseline = 'top';
       ctx.shadowColor = 'rgba(0,0,0,0.25)';
       ctx.shadowBlur = 2;
       const ty = boxY + (boxH - textH) / 2;
+
+      // --- 逐字繪製：強制字距（解決 letterSpacing 無效）---
+      ctx.fillStyle = textColor;
       lines.forEach((line, i) => {
-        ctx.fillText(line, boxX + padding, ty + i * lineHeight);
+        let currentX = boxX + padding;
+        const currentY = ty + i * lineHeight;
+        for (let j = 0; j < line.length; j++) {
+          ctx.fillText(line[j], currentX, currentY);
+          currentX += ctx.measureText(line[j]).width + letterSpacing;
+        }
       });
       ctx.shadowBlur = 0;
       ctx.restore();
