@@ -148,7 +148,7 @@ canvas {
         <p>文字&邊框顏色</p>
         <div class="color-btn-wrap">
             <button class="color-btn active" style="background:#e53935" onclick="setColor('#e53935',this)"></button>
-            <button class="color-btn" style="background:#2962CC" onclick="setColor('#2962CC',this)"></button>
+            <button class="color-btn" style="background:#0061FE" onclick="setColor('#0061FE',this)"></button>
             <button class="color-btn" style="background:#4CAF50" onclick="setColor('#4CAF50',this)"></button>
             <button class="color-btn" style="background:#FF9800" onclick="setColor('#FF9800',this)"></button>
             <button class="color-btn" style="background:#9C27B0" onclick="setColor('#9C27B0',this)"></button>
@@ -190,7 +190,8 @@ let nowColor = "#e53935";
 const FIX_WIDTH = 130;
 const PADDING = 26;
 const FONT_SIZE = 68;
-const CHAR_GAP = 90;
+const CHAR_GAP_NORMAL = 90;   // 4字內正常間距
+const CHAR_GAP_SMALL = 76;    // 5字以上縮小間距
 const BORDER = 6;
 const RADIUS = 10;
 const dpr = window.devicePixelRatio || 1;
@@ -224,7 +225,12 @@ function roundRect(x,y,w,h,r){
 function draw() {
     const txt = document.getElementById('text').value.trim();
     const chars = txt.split('');
-    const textBlockHeight = (chars.length - 1) * CHAR_GAP + FONT_SIZE;
+    const length = chars.length;
+    
+    // 智慧判斷：5字以上 自動縮小字間距
+    const charGap = length >= 5 ? CHAR_GAP_SMALL : CHAR_GAP_NORMAL;
+    
+    const textBlockHeight = (length - 1) * charGap + FONT_SIZE;
     const totalHeight = PADDING + textBlockHeight + PADDING;
 
     canvas.width = FIX_WIDTH * dpr;
@@ -236,8 +242,6 @@ function draw() {
     ctx.clearRect(0, 0, FIX_WIDTH, totalHeight);
 
     roundRect(BORDER, BORDER, FIX_WIDTH - BORDER*2, totalHeight - BORDER*2, RADIUS);
-    ctx.fillStyle = "#fff";
-    ctx.fill();
     ctx.strokeStyle = nowColor;
     ctx.lineWidth = BORDER;
     ctx.stroke();
@@ -249,13 +253,13 @@ function draw() {
 
     let startY = PADDING + FONT_SIZE / 2;
     chars.forEach((ch, i) => {
-        ctx.fillText(ch, FIX_WIDTH / 2, startY + i * CHAR_GAP);
+        ctx.fillText(ch, FIX_WIDTH / 2, startY + i * charGap);
     });
 }
 
 function download(){
     const a = document.createElement('a');
-    a.download = "標示牌.png";
+    a.download = "標示牌_透明背景.png";
     a.href = canvas.toDataURL('image/png');
     a.click();
 }
