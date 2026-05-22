@@ -190,8 +190,8 @@ let nowColor = "#e53935";
 const FIX_WIDTH = 130;
 const PADDING = 26;
 const FONT_SIZE = 68;
-const CHAR_GAP_NORMAL = 90;   // 4字內正常間距
-const CHAR_GAP_SMALL = 76;    // 5字以上縮小間距
+const CHAR_GAP_NORMAL = 90;
+const CHAR_GAP_SMALL = 76;
 const BORDER = 6;
 const RADIUS = 10;
 const dpr = window.devicePixelRatio || 1;
@@ -226,8 +226,6 @@ function draw() {
     const txt = document.getElementById('text').value.trim();
     const chars = txt.split('');
     const length = chars.length;
-    
-    // 智慧判斷：5字以上 自動縮小字間距
     const charGap = length >= 5 ? CHAR_GAP_SMALL : CHAR_GAP_NORMAL;
     
     const textBlockHeight = (length - 1) * charGap + FONT_SIZE;
@@ -240,12 +238,16 @@ function draw() {
     ctx.scale(dpr, dpr);
 
     ctx.clearRect(0, 0, FIX_WIDTH, totalHeight);
-
+    // 框内填充白色
     roundRect(BORDER, BORDER, FIX_WIDTH - BORDER*2, totalHeight - BORDER*2, RADIUS);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    // 绘制边框
     ctx.strokeStyle = nowColor;
     ctx.lineWidth = BORDER;
     ctx.stroke();
 
+    // 绘制文字
     ctx.fillStyle = nowColor;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -259,7 +261,7 @@ function draw() {
 
 function download(){
     const a = document.createElement('a');
-    a.download = "標示牌_透明背景.png";
+    a.download = "標示牌_透明外框.png";
     a.href = canvas.toDataURL('image/png');
     a.click();
 }
