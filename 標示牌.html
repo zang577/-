@@ -54,6 +54,45 @@ input {
     border-radius: 8px;
     font-size: 16px;
 }
+.color-group {
+    margin: 10px 0;
+}
+.color-group p {
+    font-size: 15px;
+    margin-bottom: 6px;
+    color: #333;
+}
+.color-btn-wrap {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+.color-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+}
+.color-btn.active {
+    border-color: #222;
+}
+.custom-color {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+.custom-color label {
+    font-size: 14px;
+}
+.custom-color input[type="color"] {
+    width: 50px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+}
 .preset {
     display: flex;
     gap: 6px;
@@ -104,13 +143,41 @@ canvas {
 
 <div class="control">
     <input id="text" value="營業中">
+
+    <div class="color-group">
+        <p>文字&邊框顏色</p>
+        <div class="color-btn-wrap">
+            <button class="color-btn active" style="background:#e53935" onclick="setColor('#e53935',this)"></button>
+            <button class="color-btn" style="background:#2962CC" onclick="setColor('#2962CC',this)"></button>
+            <button class="color-btn" style="background:#4CAF50" onclick="setColor('#4CAF50',this)"></button>
+            <button class="color-btn" style="background:#FF9800" onclick="setColor('#FF9800',this)"></button>
+            <button class="color-btn" style="background:#9C27B0" onclick="setColor('#9C27B0',this)"></button>
+            <button class="color-btn" style="background:#00BCD4" onclick="setColor('#00BCD4',this)"></button>
+            <button class="color-btn" style="background:#795548" onclick="setColor('#795548',this)"></button>
+            <button class="color-btn" style="background:#9E9E9E" onclick="setColor('#9E9E9E',this)"></button>
+            <button class="color-btn" style="background:#000000" onclick="setColor('#000000',this)"></button>
+        </div>
+
+        <div class="custom-color">
+            <label>自訂顏色：</label>
+            <input type="color" id="customColor" oninput="setColor(this.value,this)" onchange="setColor(this.value,this)">
+        </div>
+    </div>
+
     <div class="preset">
         <button onclick="set('營業中')">營業中</button>
         <button onclick="set('休息中')">休息中</button>
         <button onclick="set('本日公休')">本日公休</button>
+        <button onclick="set('禁止進入')">禁止進入</button>
+        <button onclick="set('請勿打擾')">請勿打擾</button>
+        <button onclick="set('請勿攝影')">請勿攝影</button>
+        <button onclick="set('歡迎參觀')">歡迎參觀</button>
+        <button onclick="set('請先付款')">請先付款</button>
+        <button onclick="set('禁帶外食')">禁帶外食</button>
         <button onclick="set('冷氣開放中')">冷氣開放中</button>
         <button onclick="set('錄影監視中')">錄影監視中</button>
     </div>
+
     <button class="btn-red" onclick="draw()">更新預覽</button>
     <button class="btn-dark" onclick="download()">下載透明圖</button>
 </div>
@@ -118,15 +185,22 @@ canvas {
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
+let nowColor = "#e53935";
 
 const FIX_WIDTH = 130;
 const PADDING = 26;
 const FONT_SIZE = 68;
-const CHAR_GAP = 88;
+const CHAR_GAP = 90;
 const BORDER = 6;
 const RADIUS = 10;
-
 const dpr = window.devicePixelRatio || 1;
+
+function setColor(color, dom){
+    nowColor = color;
+    document.querySelectorAll('.color-btn').forEach(item=>item.classList.remove('active'));
+    if(dom && dom.classList) dom.classList.add('active');
+    draw();
+}
 
 function set(t) {
     document.getElementById('text').value = t;
@@ -164,11 +238,11 @@ function draw() {
     roundRect(BORDER, BORDER, FIX_WIDTH - BORDER*2, totalHeight - BORDER*2, RADIUS);
     ctx.fillStyle = "#fff";
     ctx.fill();
-    ctx.strokeStyle = "#e53935";
+    ctx.strokeStyle = nowColor;
     ctx.lineWidth = BORDER;
     ctx.stroke();
 
-    ctx.fillStyle = "#e53935";
+    ctx.fillStyle = nowColor;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = `bold ${FONT_SIZE}px "Noto Sans TC", sans-serif`;
