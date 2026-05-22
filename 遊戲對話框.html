@@ -154,15 +154,14 @@
     const baseFontSize = 24;
     const baseTextPadding = 40;
     const baseLineHeight = 1.8;
-    const baseLetterSpacing = 4; // 改用逐字繪製，這裡是「字距(px)」
+    const baseLetterSpacing = 4;
     const baseMinBoxHeight = 120;
     const baseBorderWidth = 6;
     let textSizeScale = 0.9;
 
-    // 大圖防小：最小基準尺寸（不論圖多大，文字/對話框不會比這更小）
     const MIN_FONT_SIZE = 16;
     const MIN_BOX_PADDING = 30;
-    const BOX_WIDTH_RATIO = 0.9; // 對話框寬度占圖寬比例
+    const BOX_WIDTH_RATIO = 0.9;
 
     const styleGroups = {
       classic: [
@@ -324,7 +323,6 @@
     }
 
     function setupCanvas() {
-      // DPR 高清适配
       const dpr = window.devicePixelRatio || 1;
       const maxW = Math.min(backgroundImage.width, window.innerWidth - 32);
       const scale = maxW / backgroundImage.width;
@@ -455,12 +453,10 @@
       ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
       ctx.drawImage(backgroundImage, 0, 0, canvas.width / dpr, canvas.height / dpr);
 
-      // 以圖寬為基準，鎖定「對話框占比」和「最小尺寸」
       const imgW = canvas.width / dpr;
       const imgH = canvas.height / dpr;
       const scaleBase = imgW / 1000;
 
-      // 大圖防小：保底尺寸
       const fontSize = Math.max(MIN_FONT_SIZE, baseFontSize * scaleBase * textSizeScale);
       const padding = Math.max(MIN_BOX_PADDING, baseTextPadding * scaleBase);
       const lineHeight = baseLineHeight * fontSize;
@@ -474,215 +470,228 @@
       drawScaledDialogueBox(imgW, imgH, scaleBase, fontSize, padding, lineHeight, letterSpacing, minH, borderW, offsetX, offsetY);
     }
 
-    function drawScaledDialogueBox(imgW, imgH, scale, fontSize, padding, lineHeight, letterSpacing, minH, borderW, offsetX, offsetY) {
-      const style = currentStyle;
-      const text = document.getElementById('dialogueText').value.trim();
-      const textColor = document.getElementById('textColor').value;
-      const opacity = parseFloat(document.getElementById('boxOpacity').value);
-      const marginPerc = parseFloat(document.getElementById('bottomMarginSlider').value);
-      const marginBottom = (marginPerc / 100) * imgH;
+function drawScaledDialogueBox(imgW, imgH, scale, fontSize, padding, lineHeight, letterSpacing, minH, borderW, offsetX, offsetY) {
+  const style = currentStyle;
+  const text = document.getElementById('dialogueText').value.trim();
+  const textColor = document.getElementById('textColor').value;
+  const opacity = parseFloat(document.getElementById('boxOpacity').value);
+  const marginPerc = parseFloat(document.getElementById('bottomMarginSlider').value);
+  const marginBottom = (marginPerc / 100) * imgH;
 
-      ctx.font = `${fontSize}px "Noto Sans TC", sans-serif`;
-      ctx.textBaseline = 'top';
+  ctx.font = `${fontSize}px "Noto Sans TC", sans-serif`;
+  ctx.textBaseline = 'top';
 
-      // 對話框寬度：固定比例
-      const boxW = imgW * BOX_WIDTH_RATIO;
-      const textMaxWidth = boxW - padding * 2.5;
+  const boxW = imgW * BOX_WIDTH_RATIO;
+  const textMaxWidth = boxW - padding * 2;
 
-      // 分行（不考慮字距，先斷行）
-      const lines = [];
-      let tempLine = '';
-      const chars = text.split('');
-      for(let i=0; i<chars.length; i++){
-        const test = tempLine + chars[i];
-        if(ctx.measureText(test).width <= textMaxWidth){
-          tempLine = test;
-        }else{
-          lines.push(tempLine);
-          tempLine = chars[i];
-        }
-      }
-      if(tempLine) lines.push(tempLine);
+  const lines = [];
+  let currentLine = '';
+  let currentLineWidth = 0;
+  const chars = text.split('');
 
-      const textH = lines.length * lineHeight;
-      const boxH = Math.max(minH, textH + padding * 2);
-      const boxX = (imgW - boxW) / 2 + offsetX;
-      let boxY = imgH - boxH - marginBottom - offsetY;
-      if (boxY < 20) boxY = 20;
+  for (let j = 0; j < chars.length; j++) {
+    const char = chars[j];
+    const charW = ctx.measureText(char).width;
+    const addW = currentLineWidth === 0 ? charW : charW + letterSpacing;
 
-      ctx.save();
-      ctx.globalAlpha = opacity;
-
-      // --- 繪製對話框背景與邊框 ---
-      switch (style) {
-        case 'style14':
-          let skyGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY+boxH);
-          skyGrad.addColorStop(0,'#87CEFA'); skyGrad.addColorStop(1,'#E0F7FF');
-          ctx.fillStyle = skyGrad;
-          ctx.beginPath();
-          let r = borderW * 3;
-          ctx.moveTo(boxX + r, boxY);
-          ctx.lineTo(boxX + boxW - r, boxY);
-          ctx.arcTo(boxX+boxW, boxY, boxX+boxW, boxY+r, r);
-          ctx.lineTo(boxX+boxW, boxY+boxH - r);
-          ctx.arcTo(boxX+boxW, boxY+boxH, boxX+boxW-r, boxY+boxH, r);
-          ctx.lineTo(boxX + r, boxY+boxH);
-          ctx.arcTo(boxX, boxY+boxH, boxX, boxY+boxH-r, r);
-          ctx.lineTo(boxX, boxY + r);
-          ctx.arcTo(boxX, boxY, boxX+r, boxY, r);
-          ctx.closePath();
-          ctx.fill();
-          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = borderW * 1.2; ctx.stroke();
-          break;
-
-        case 'ani2':
-          ctx.fillStyle = stylePreviewMap[style].bg;
-          ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*4); ctx.fill();
-          ctx.strokeStyle = stylePreviewMap[style].border; ctx.lineWidth = borderW; ctx.stroke();
-          break;
-
-        case 'new1':
-          ctx.fillStyle = '#121212'; ctx.fillRect(boxX,boxY,boxW,boxH);
-          ctx.strokeStyle = '#E5E5E5'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
-          ctx.strokeStyle = '#BBBBBB'; ctx.lineWidth = borderW*0.5; ctx.strokeRect(boxX+borderW,boxY+borderW,boxW-borderW*2,boxH-borderW*2);
-          ctx.strokeStyle = '#888888'; ctx.lineWidth = borderW*0.25; ctx.strokeRect(boxX+borderW*2,boxY+borderW*2,boxW-borderW*4,boxH-borderW*4);
-          break;
-
-        case 'new3':
-          ctx.fillStyle = '#FFEEF6'; ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*2); ctx.fill();
-          ctx.strokeStyle = '#FFC8D8'; ctx.lineWidth = borderW; ctx.stroke();
-          ctx.strokeStyle = '#FFB7C5'; ctx.lineWidth = borderW*0.5; ctx.strokeRect(boxX+borderW,boxY+borderW,boxW-borderW*2,boxH-borderW*2);
-          break;
-
-        case 'new4':
-          ctx.fillStyle = '#Fef4f8'; ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*2); ctx.fill();
-          ctx.strokeStyle = '#F9A8D4'; ctx.lineWidth = borderW; ctx.stroke();
-          drawCornerStarOnBorder(boxX, boxY, boxW, boxH, borderW, scale, '#F9A8D4');
-          break;
-
-        case 'new5':
-          ctx.fillStyle = '#FFF0F5'; ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*2); ctx.fill();
-          ctx.strokeStyle = '#FB7185'; ctx.lineWidth = borderW; ctx.stroke();
-          drawCornerHeartOnBorder(boxX, boxY, boxW, boxH, borderW, scale, '#FB7185');
-          break;
-
-        case 'new7':
-          ctx.fillStyle = '#F5EFE2'; ctx.fillRect(boxX,boxY,boxW,boxH);
-          drawLinePattern(boxX,boxY,boxW,boxH,scale);
-          ctx.strokeStyle = '#A89078'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
-          break;
-
-        case 'new8':
-          ctx.fillStyle = '#FFEEF2'; ctx.fillRect(boxX,boxY,boxW,boxH);
-          drawDotPattern(boxX,boxY,boxW,boxH,scale);
-          ctx.strokeStyle = '#F472B6'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
-          break;
-
-        case 'new11':
-          ctx.fillStyle = '#FFFFFF';
-          ctx.beginPath();
-          ctx.moveTo(boxX+borderW*3, boxY);
-          ctx.lineTo(boxX+boxW-borderW*3, boxY);
-          ctx.lineTo(boxX+boxW, boxY+boxH/2);
-          ctx.lineTo(boxX+boxW-borderW*3, boxY+boxH);
-          ctx.lineTo(boxX+borderW*3, boxY+boxH);
-          ctx.closePath();
-          ctx.fill();
-          ctx.strokeStyle = '#64748B'; ctx.lineWidth = borderW; ctx.stroke();
-          break;
-
-        case 'new12':
-          ctx.fillStyle = '#E0F7FA';
-          ctx.beginPath();
-          const waveW = borderW * 2.5;
-          let currX = boxX;
-          ctx.moveTo(currX, boxY);
-          while(currX < boxX + boxW){
-            ctx.quadraticCurveTo(currX + waveW/2, boxY - waveW/2, currX + waveW, boxY);
-            currX += waveW;
-          }
-          ctx.lineTo(boxX + boxW, boxY + boxH);
-          currX = boxX + boxW;
-          while(currX > boxX){
-            ctx.quadraticCurveTo(currX - waveW/2, boxY + boxH + waveW/2, currX - waveW, boxY + boxH);
-            currX -= waveW;
-          }
-          ctx.closePath();
-          ctx.fill();
-          ctx.strokeStyle = '#4DD0E1'; ctx.lineWidth = borderW; ctx.stroke();
-          break;
-
-        case 'sum1':
-          let oceanGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY+boxH);
-          oceanGrad.addColorStop(0, '#E0F2FE');
-          oceanGrad.addColorStop(0.5, '#BAE6FD');
-          oceanGrad.addColorStop(1, '#7DD3FC');
-          ctx.fillStyle = oceanGrad;
-          ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*2); ctx.fill();
-          ctx.strokeStyle = '#22D3EE'; ctx.lineWidth = borderW; ctx.stroke();
-          break;
-
-        case 'pea1':
-          ctx.fillStyle = '#FFECEC'; ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*3); ctx.fill();
-          drawPixelPeach(boxX, boxY, boxW, boxH, scale);
-          ctx.strokeStyle = '#FDA4AF'; ctx.lineWidth = borderW; ctx.stroke();
-          break;
-
-        case 'candy1':
-          ctx.fillStyle = '#FFF7FC'; ctx.fillRect(boxX,boxY,boxW,boxH);
-          const sprinkleColors = ['#F472B6','#EC4899','#8B5CF6','#6366F1','#3B82F6','#22D3EE','#10B981','#F59E0B','#EF4444'];
-          ctx.fillStyle = sprinkleColors[Math.floor(Math.random()*sprinkleColors.length)];
-          ctx.strokeStyle = '#F472B6'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
-          break;
-
-        case 'school1':
-          ctx.fillStyle = '#EFF6FF'; ctx.fillRect(boxX,boxY,boxW,boxH);
-          drawLinePattern(boxX,boxY,boxW,boxH,scale);
-          ctx.strokeStyle = '#60A5FA'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
-          break;
-
-        case 'rom1':
-          let romGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY+boxH);
-          romGrad.addColorStop(0, '#FDF2F8');
-          romGrad.addColorStop(0.5, '#FCE7F3');
-          romGrad.addColorStop(1, '#FBCFE8');
-          ctx.fillStyle = romGrad;
-          ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*3); ctx.fill();
-          drawHeartAndBubblesClean(boxX, boxY, boxW, boxH, scale);
-          ctx.strokeStyle = '#F43F5E'; ctx.lineWidth = borderW; ctx.stroke();
-          break;
-
-        case 'castle1':
-          ctx.fillStyle = '#1E293B'; ctx.fillRect(boxX,boxY,boxW,boxH);
-          drawGlowStroke(boxX,boxY,boxW,boxH,'#CBD5E1',borderW);
-          break;
-
-        default:
-          ctx.fillStyle = stylePreviewMap[style].bg;
-          ctx.fillRect(boxX, boxY, boxW, boxH);
-          ctx.strokeStyle = stylePreviewMap[style].border;
-          ctx.lineWidth = borderW;
-          ctx.strokeRect(boxX, boxY, boxW, boxH);
-      }
-
-      ctx.globalAlpha = 1;
-      ctx.shadowColor = 'rgba(0,0,0,0.25)';
-      ctx.shadowBlur = 2;
-      const ty = boxY + (boxH - textH) / 2;
-
-      // --- 逐字繪製：強制字距（解決 letterSpacing 無效）---
-      ctx.fillStyle = textColor;
-      lines.forEach((line, i) => {
-        let currentX = boxX + padding;
-        const currentY = ty + i * lineHeight;
-        for (let j = 0; j < line.length; j++) {
-          ctx.fillText(line[j], currentX, currentY);
-          currentX += ctx.measureText(line[j]).width + letterSpacing;
-        }
-      });
-      ctx.shadowBlur = 0;
-      ctx.restore();
+    if (currentLineWidth + addW <= textMaxWidth) {
+      currentLine += char;
+      currentLineWidth += addW;
+    } else {
+      lines.push({ text: currentLine, width: currentLineWidth });
+      currentLine = char;
+      currentLineWidth = charW;
     }
+  }
+  if (currentLine) {
+    lines.push({ text: currentLine, width: currentLineWidth });
+  }
+
+  const textH = lines.length * lineHeight;
+  const boxH = Math.max(minH, textH + padding * 2);
+  const boxX = (imgW - boxW) / 2 + offsetX;
+  let boxY = imgH - boxH - marginBottom - offsetY;
+  if (boxY < 20) boxY = 20;
+
+  ctx.save();
+  ctx.globalAlpha = opacity;
+
+  switch (style) {
+    case 'style14':
+      let skyGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY+boxH);
+      skyGrad.addColorStop(0,'#87CEFA'); skyGrad.addColorStop(1,'#E0F7FF');
+      ctx.fillStyle = skyGrad;
+      ctx.beginPath();
+      let r = borderW * 3;
+      ctx.moveTo(boxX + r, boxY);
+      ctx.lineTo(boxX + boxW - r, boxY);
+      ctx.arcTo(boxX+boxW, boxY, boxX+boxW, boxY+r, r);
+      ctx.lineTo(boxX+boxW, boxY+boxH - r);
+      ctx.arcTo(boxX+boxW, boxY+boxH, boxX+boxW-r, boxY+boxH, r);
+      ctx.lineTo(boxX + r, boxY+boxH);
+      ctx.arcTo(boxX, boxY+boxH, boxX, boxY+boxH-r, r);
+      ctx.lineTo(boxX, boxY + r);
+      ctx.arcTo(boxX, boxY, boxX+r, boxY, r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = borderW * 1.2; ctx.stroke();
+      break;
+
+    case 'ani2':
+      ctx.fillStyle = stylePreviewMap[style].bg;
+      ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*4); ctx.fill();
+      ctx.strokeStyle = stylePreviewMap[style].border; ctx.lineWidth = borderW; ctx.stroke();
+      break;
+
+    case 'new1':
+      ctx.fillStyle = '#121212'; ctx.fillRect(boxX,boxY,boxW,boxH);
+      ctx.strokeStyle = '#E5E5E5'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
+      ctx.strokeStyle = '#BBBBBB'; ctx.lineWidth = borderW*0.5; ctx.strokeRect(boxX+borderW,boxY+borderW,boxW-borderW*2,boxH-borderW*2);
+      ctx.strokeStyle = '#888888'; ctx.lineWidth = borderW*0.25; ctx.strokeRect(boxX+borderW*2,boxY+borderW*2,boxW-borderW*4,boxH-borderW*4);
+      break;
+
+    case 'new3':
+      ctx.fillStyle = '#FFEEF6'; ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*2); ctx.fill();
+      ctx.strokeStyle = '#FFC8D8'; ctx.lineWidth = borderW; ctx.stroke();
+      ctx.strokeStyle = '#FFB7C5'; ctx.lineWidth = borderW*0.5; ctx.strokeRect(boxX+borderW,boxY+borderW,boxW-borderW*2,boxH-borderW*2);
+      break;
+
+    case 'new4':
+      ctx.fillStyle = '#Fef4f8'; ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*2); ctx.fill();
+      ctx.strokeStyle = '#F9A8D4'; ctx.lineWidth = borderW; ctx.stroke();
+      drawCornerStarOnBorder(boxX, boxY, boxW, boxH, borderW, scale, '#F9A8D4');
+      break;
+
+    case 'new5':
+      ctx.fillStyle = '#FFF0F5'; ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*2); ctx.fill();
+      ctx.strokeStyle = '#FB7185'; ctx.lineWidth = borderW; ctx.stroke();
+      drawCornerHeartOnBorder(boxX, boxY, boxW, boxH, borderW, scale, '#FB7185');
+      break;
+
+    case 'new7':
+      ctx.fillStyle = '#F5EFE2'; ctx.fillRect(boxX,boxY,boxW,boxH);
+      drawLinePattern(boxX,boxY,boxW,boxH,scale);
+      ctx.strokeStyle = '#A89078'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
+      break;
+
+    case 'new8':
+      ctx.fillStyle = '#FFEEF2'; ctx.fillRect(boxX,boxY,boxW,boxH);
+      drawDotPattern(boxX,boxY,boxW,boxH,scale);
+      ctx.strokeStyle = '#F472B6'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
+      break;
+
+    case 'new11':
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.moveTo(boxX+borderW*3, boxY);
+      ctx.lineTo(boxX+boxW-borderW*3, boxY);
+      ctx.lineTo(boxX+boxW, boxY+boxH/2);
+      ctx.lineTo(boxX+boxW-borderW*3, boxY+boxH);
+      ctx.lineTo(boxX+borderW*3, boxY+boxH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#64748B'; ctx.lineWidth = borderW; ctx.stroke();
+      break;
+
+    case 'new12':
+      ctx.fillStyle = '#E0F7FA';
+      ctx.beginPath();
+      const waveW = borderW * 2.5;
+      let currX = boxX;
+      ctx.moveTo(currX, boxY);
+      while(currX < boxX + boxW){
+        ctx.quadraticCurveTo(currX + waveW/2, boxY - waveW/2, currX + waveW, boxY);
+        currX += waveW;
+      }
+      ctx.lineTo(boxX + boxW, boxY + boxH);
+      currX = boxX + boxW;
+      while(currX > boxX){
+        ctx.quadraticCurveTo(currX - waveW/2, boxY + boxH + waveW/2, currX - waveW, boxY + boxH);
+        currX -= waveW;
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#4DD0E1'; ctx.lineWidth = borderW; ctx.stroke();
+      break;
+
+    case 'sum1':
+      let oceanGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY+boxH);
+      oceanGrad.addColorStop(0, '#E0F2FE');
+      oceanGrad.addColorStop(0.5, '#BAE6FD');
+      oceanGrad.addColorStop(1, '#7DD3FC');
+      ctx.fillStyle = oceanGrad;
+      ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*2); ctx.fill();
+      ctx.strokeStyle = '#22D3EE'; ctx.lineWidth = borderW; ctx.stroke();
+      break;
+
+    case 'pea1':
+      ctx.fillStyle = '#FFECEC'; ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*3); ctx.fill();
+      drawPixelPeach(boxX, boxY, boxW, boxH, scale);
+      ctx.strokeStyle = '#FDA4AF'; ctx.lineWidth = borderW; ctx.stroke();
+      break;
+
+    case 'candy1':
+      ctx.fillStyle = '#FFF7FC'; ctx.fillRect(boxX,boxY,boxW,boxH);
+      const sprinkleColors = ['#F472B6','#EC4899','#8B5CF6','#6366F1','#3B82F6','#22D3EE','#10B981','#F59E0B','#EF4444'];
+      ctx.fillStyle = sprinkleColors[Math.floor(Math.random()*sprinkleColors.length)];
+      ctx.strokeStyle = '#F472B6'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
+      break;
+
+    case 'school1':
+      ctx.fillStyle = '#EFF6FF'; ctx.fillRect(boxX,boxY,boxW,boxH);
+      drawLinePattern(boxX,boxY,boxW,boxH,scale);
+      ctx.strokeStyle = '#60A5FA'; ctx.lineWidth = borderW; ctx.strokeRect(boxX,boxY,boxW,boxH);
+      break;
+
+    case 'rom1':
+      let romGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY+boxH);
+      romGrad.addColorStop(0, '#FDF2F8');
+      romGrad.addColorStop(0.5, '#FCE7F3');
+      romGrad.addColorStop(1, '#FBCFE8');
+      ctx.fillStyle = romGrad;
+      ctx.beginPath(); ctx.roundRect(boxX,boxY,boxW,boxH,borderW*3); ctx.fill();
+      drawHeartAndBubblesClean(boxX, boxY, boxW, boxH, scale);
+      ctx.strokeStyle = '#F43F5E'; ctx.lineWidth = borderW; ctx.stroke();
+      break;
+
+    case 'castle1':
+      ctx.fillStyle = '#1E293B'; ctx.fillRect(boxX,boxY,boxW,boxH);
+      drawGlowStroke(boxX,boxY,boxW,boxH,'#CBD5E1',borderW);
+      break;
+
+    default:
+      ctx.fillStyle = stylePreviewMap[style].bg;
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = stylePreviewMap[style].border;
+      ctx.lineWidth = borderW;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.shadowColor = 'rgba(0,0,0,0.25)';
+  ctx.shadowBlur = 2;
+  const ty = boxY + (boxH - textH) / 2;
+
+  ctx.fillStyle = textColor;
+  const availableWidth = boxW - padding * 2;
+
+  lines.forEach((lineObj, i) => {
+    const line = lineObj.text;
+    const lineW = lineObj.width;
+    let currentX = boxX + padding + (availableWidth - lineW) / 2;
+    const currentY = ty + i * lineHeight;
+
+    for (let j = 0; j < line.length; j++) {
+      const char = line[j];
+      ctx.fillText(char, currentX, currentY);
+      const charW = ctx.measureText(char).width;
+      currentX += charW + letterSpacing;
+    }
+  });
+
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
 
     function updateOpacityPreview() {
       const op = document.getElementById('opacityPreview');
