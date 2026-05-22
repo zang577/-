@@ -9,7 +9,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "Microsoft JhengHei", sans-serif;
+    font-family: "Noto Sans TC", sans-serif;
 }
 button {
     background: none;
@@ -68,14 +68,6 @@ input {
     border-radius: 4px !important;
     font-size: 14px;
 }
-.preset button:hover,
-.preset button:focus,
-.preset button:active,
-.preset button:visited {
-    background: #eee !important;
-    color: #000 !important;
-    border: 1px solid #ccc !important;
-}
 .btn-red {
     width: 100%;
     padding: 12px;
@@ -97,11 +89,9 @@ input {
 canvas {
     display: block;
     margin: 0 auto;
-    width: 180px;
-    /* 新增：確保畫布在任何情況下都能正確顯示 */
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    width: 130px;
 }
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700&display=swap');
 </style>
 </head>
 <body>
@@ -129,15 +119,13 @@ canvas {
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
-// 關鍵：上下留白 = 左右留白 統一尺寸
-const FIX_WIDTH = 180;
-const PADDING_SPACE = 36;   // 上下、左右統一留白大小
-const FONT_SIZE = 70;
-const CHAR_GAP = 84;
+const FIX_WIDTH = 130;
+const PADDING = 26;
+const FONT_SIZE = 68;
+const CHAR_GAP = 88;
 const BORDER = 6;
 const RADIUS = 10;
 
-// 獲取設備像素比，處理高分辨率屏幕
 const dpr = window.devicePixelRatio || 1;
 
 function set(t) {
@@ -162,26 +150,17 @@ function roundRect(x,y,w,h,r){
 function draw() {
     const txt = document.getElementById('text').value.trim();
     const chars = txt.split('');
-    // 文字區整體高度
     const textBlockHeight = (chars.length - 1) * CHAR_GAP + FONT_SIZE;
-    // 整張圖高度 = 上留白 + 文字高 + 下留白
-    const totalHeight = PADDING_SPACE + textBlockHeight + PADDING_SPACE;
+    const totalHeight = PADDING + textBlockHeight + PADDING;
 
-    // 設置canvas的實際像素大小，考慮設備像素比
     canvas.width = FIX_WIDTH * dpr;
     canvas.height = totalHeight * dpr;
-    
-    // 設置CSS顯示大小
     canvas.style.width = FIX_WIDTH + 'px';
     canvas.style.height = totalHeight + 'px';
-    
-    // 縮放繪圖上下文以匹配設備像素比
     ctx.scale(dpr, dpr);
-    
-    // 清除整個畫布
+
     ctx.clearRect(0, 0, FIX_WIDTH, totalHeight);
 
-    // 繪製外框
     roundRect(BORDER, BORDER, FIX_WIDTH - BORDER*2, totalHeight - BORDER*2, RADIUS);
     ctx.fillStyle = "#fff";
     ctx.fill();
@@ -189,36 +168,25 @@ function draw() {
     ctx.lineWidth = BORDER;
     ctx.stroke();
 
-    // 文字設定 - 關鍵修復：調整文字渲染設置
     ctx.fillStyle = "#e53935";
     ctx.textAlign = "center";
-    ctx.textBaseline = "middle"; // 修改為middle，使文字垂直居中
-    // 新增：設置文字渲染方式，提高清晰度
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    // 確保字體加載正確
-    ctx.font = `bold ${FONT_SIZE}px "Microsoft JhengHei", "PingFang SC", "Heiti TC", sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.font = `bold ${FONT_SIZE}px "Noto Sans TC", sans-serif`;
 
-    // 文字頂部固定在留白位置
-    let startY = PADDING_SPACE + FONT_SIZE / 2; // 調整起始位置，考慮文字基線
+    let startY = PADDING + FONT_SIZE / 2;
     chars.forEach((ch, i) => {
-        // 繪製文字，使用修正的Y坐標
         ctx.fillText(ch, FIX_WIDTH / 2, startY + i * CHAR_GAP);
     });
 }
 
 function download(){
     const a = document.createElement('a');
-    a.download = "標示牌_透明.png";
+    a.download = "標示牌.png";
     a.href = canvas.toDataURL('image/png');
     a.click();
 }
 
-// 初始化繪製
 draw();
-
-// 新增：處理屏幕旋轉或調整大小時重新繪製
-window.addEventListener('resize', draw);
 </script>
 </body>
 </html>
