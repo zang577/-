@@ -37,6 +37,13 @@ h2 {
     margin-bottom: 20px;
     text-align: center;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    position: relative;
+    overflow: hidden;
+}
+#previewCanvas {
+    display: block;
+    max-width: 100%;
+    border-radius: 8px;
 }
 .control {
     background: #fff;
@@ -101,29 +108,56 @@ input {
 }
 .preset button {
     padding: 6px 12px;
-    background: #eee !important;
-    color: #000 !important;
-    border: 1px solid #ccc !important;
-    border-radius: 4px !important;
+    background: #c8c1b6;
+    color: #444;
+    border-radius: 6px;
     font-size: 14px;
+    transition: 0.2s;
+}
+.preset button:hover {
+    background: #b9b2a5;
+}
+.upload-btn {
+    width: 100%;
+    padding: 12px;
+    background: #94a3a8;
+    color: #fff;
+    border-radius: 8px;
+    margin-top: 6px;
+    font-size: 16px;
+    transition: 0.2s;
+}
+.upload-btn:hover {
+    background: #829196;
 }
 .btn-red {
     width: 100%;
     padding: 12px;
-    background: #e53935;
+    background: #b8a9a1;
     color: #fff;
     border-radius: 8px;
     margin-top: 6px;
     font-size: 16px;
+    transition: 0.2s;
+}
+.btn-red:hover {
+    background: #a79890;
 }
 .btn-dark {
     width: 100%;
     padding: 12px;
-    background: #333;
+    background: #7c8489;
     color: #fff;
     border-radius: 8px;
     margin-top: 6px;
     font-size: 16px;
+    transition: 0.2s;
+}
+.btn-dark:hover {
+    background: #6b7378;
+}
+#fileInput {
+    display: none;
 }
 canvas {
     display: block;
@@ -138,7 +172,7 @@ canvas {
 <h2>標示牌產生器</h2>
 <div class="preview">
     <h3>預覽</h3>
-    <canvas id="c"></canvas>
+    <canvas id="previewCanvas"></canvas>
 </div>
 
 <div class="control">
@@ -178,13 +212,16 @@ canvas {
         <button onclick="set('錄影監視中')">錄影監視中</button>
     </div>
 
-    <button class="btn-red" onclick="draw()">更新預覽</button>
-    <button class="btn-dark" onclick="download()">下載透明圖</button>
+    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">上傳圖片</button>
+    <input type="file" id="fileInput" accept="image/*">
+    
+    <button class="btn-red" onclick="redrawSign()">更新預覽</button>
+    <button class="btn-dark" onclick="downloadFinal()">下載圖片</button>
 </div>
 
 <script>
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
+const signCanvas = document.createElement('canvas');
+const signCtx = signCanvas.getContext('2d');
 let nowColor = "#e53935";
 
 const FIX_WIDTH = 130;
@@ -194,79 +231,212 @@ const CHAR_GAP_NORMAL = 90;
 const CHAR_GAP_SMALL = 76;
 const BORDER = 6;
 const RADIUS = 10;
-const dpr = window.devicePixelRatio || 1;
 
-function setColor(color, dom){
+let bgImage = null;
+const previewCanvas = document.getElementById('previewCanvas');
+const previewCtx = previewCanvas.getContext('2d');
+
+let signX = 0, signY = 0;
+let signScale = 1;
+let isDragging = false;
+let startX, startY;
+let initialDistance = 0;
+
+// 淺色清新日式背景
+const defaultBg = new Image();
+defaultBg.crossOrigin = "anonymous";
+defaultBg.src = "https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7?q=80&w=1000&auto=format&fit=crop";
+defaultBg.onload = function(){
+    bgImage = defaultBg;
+    previewCanvas.width = defaultBg.width;
+    previewCanvas.height = defaultBg.height;
+    signScale = 0.8;
+    signX = previewCanvas.width - signCanvas.width * signScale - 80;
+    signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2;
+    renderPreview();
+};
+
+previewCanvas.addEventListener('mousedown', startDrag);
+previewCanvas.addEventListener('mousemove', drag);
+previewCanvas.addEventListener('mouseup', endDrag);
+previewCanvas.addEventListener('mouseleave', endDrag);
+previewCanvas.addEventListener('touchstart', handleTouch, { passive: false });
+previewCanvas.addEventListener('touchmove', handleTouch, { passive: false });
+previewCanvas.addEventListener('touchend', endDrag);
+
+function setColor(color, dom) {
     nowColor = color;
-    document.querySelectorAll('.color-btn').forEach(item=>item.classList.remove('active'));
-    if(dom && dom.classList) dom.classList.add('active');
-    draw();
+    document.querySelectorAll('.color-btn').forEach(item => item.classList.remove('active'));
+    if (dom && dom.classList) dom.classList.add('active');
+    drawSign();
+    renderPreview();
 }
 
 function set(t) {
     document.getElementById('text').value = t;
-    draw();
+    drawSign();
+    renderPreview();
 }
 
-function roundRect(x,y,w,h,r){
+function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.lineTo(x+w-r, y);
-    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-    ctx.lineTo(x+w, y+h-r);
-    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-    ctx.lineTo(x+r, y+h);
-    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-    ctx.lineTo(x, y+r);
-    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
     ctx.closePath();
 }
 
-function draw() {
+function drawSign() {
     const txt = document.getElementById('text').value.trim();
     const chars = txt.split('');
-    const length = chars.length;
-    const charGap = length >= 5 ? CHAR_GAP_SMALL : CHAR_GAP_NORMAL;
-    
-    const textBlockHeight = (length - 1) * charGap + FONT_SIZE;
-    const totalHeight = PADDING + textBlockHeight + PADDING;
+    const len = chars.length;
+    const gap = len >= 5 ? CHAR_GAP_SMALL : CHAR_GAP_NORMAL;
+    const textH = (len - 1) * gap + FONT_SIZE;
+    const totalH = PADDING + textH + PADDING;
 
-    canvas.width = FIX_WIDTH * dpr;
-    canvas.height = totalHeight * dpr;
-    canvas.style.width = FIX_WIDTH + 'px';
-    canvas.style.height = totalHeight + 'px';
-    ctx.scale(dpr, dpr);
+    signCanvas.width = FIX_WIDTH;
+    signCanvas.height = totalH;
+    signCtx.clearRect(0, 0, FIX_WIDTH, totalH);
 
-    ctx.clearRect(0, 0, FIX_WIDTH, totalHeight);
-    // 框内填充白色
-    roundRect(BORDER, BORDER, FIX_WIDTH - BORDER*2, totalHeight - BORDER*2, RADIUS);
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
-    // 绘制边框
-    ctx.strokeStyle = nowColor;
-    ctx.lineWidth = BORDER;
-    ctx.stroke();
+    roundRect(signCtx, BORDER, BORDER, FIX_WIDTH - BORDER * 2, totalH - BORDER * 2, RADIUS);
+    signCtx.fillStyle = "#fff";
+    signCtx.fill();
+    signCtx.strokeStyle = nowColor;
+    signCtx.lineWidth = BORDER;
+    signCtx.stroke();
 
-    // 绘制文字
-    ctx.fillStyle = nowColor;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `bold ${FONT_SIZE}px "Noto Sans TC", sans-serif`;
+    signCtx.fillStyle = nowColor;
+    signCtx.textAlign = "center";
+    signCtx.textBaseline = "middle";
+    signCtx.font = `bold ${FONT_SIZE}px "Noto Sans TC"`;
 
-    let startY = PADDING + FONT_SIZE / 2;
-    chars.forEach((ch, i) => {
-        ctx.fillText(ch, FIX_WIDTH / 2, startY + i * charGap);
+    let sy = PADDING + FONT_SIZE / 2;
+    chars.forEach((c, i) => {
+        signCtx.fillText(c, FIX_WIDTH / 2, sy + i * gap);
     });
 }
 
-function download(){
+function renderPreview() {
+    if (!previewCanvas.width) return;
+    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+    if (bgImage) {
+        previewCtx.drawImage(bgImage, 0, 0, previewCanvas.width, previewCanvas.height);
+    }
+    const w = signCanvas.width * signScale;
+    const h = signCanvas.height * signScale;
+    previewCtx.drawImage(signCanvas, signX, signY, w, h);
+}
+
+function redrawSign() {
+    drawSign();
+    renderPreview();
+}
+
+document.getElementById('fileInput').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+        const img = new Image();
+        img.onload = function () {
+            bgImage = img;
+            previewCanvas.width = img.width;
+            previewCanvas.height = img.height;
+            signScale = 0.8;
+            signX = previewCanvas.width - signCanvas.width * signScale - 80;
+            signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2;
+            renderPreview();
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+
+function startDrag(e) {
+    isDragging = true;
+    const rect = previewCanvas.getBoundingClientRect();
+    startX = e.clientX - rect.left - signX;
+    startY = e.clientY - rect.top - signY;
+}
+
+function drag(e) {
+    if (!isDragging) return;
+    const rect = previewCanvas.getBoundingClientRect();
+    signX = e.clientX - rect.left - startX;
+    signY = e.clientY - rect.top - startY;
+    renderPreview();
+}
+
+function endDrag() {
+    isDragging = false;
+    initialDistance = 0;
+}
+
+function getDistance(t1, t2) {
+    const dx = t2.clientX - t1.clientX;
+    const dy = t2.clientY - t1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function handleTouch(e) {
+    e.preventDefault();
+    const touches = e.touches;
+    const rect = previewCanvas.getBoundingClientRect();
+
+    if (touches.length === 1) {
+        const t = touches[0];
+        if (e.type === 'touchstart') {
+            isDragging = true;
+            startX = t.clientX - rect.left - signX;
+            startY = t.clientY - rect.top - signY;
+        } else if (e.type === 'touchmove' && isDragging) {
+            signX = t.clientX - rect.left - startX;
+            signY = t.clientY - rect.top - startY;
+            renderPreview();
+        }
+    }
+
+    if (touches.length === 2) {
+        const t1 = touches[0], t2 = touches[1];
+        const dist = getDistance(t1, t2);
+        if (initialDistance > 0) {
+            const scale = dist / initialDistance;
+            signScale *= scale;
+            if (signScale < 0.2) signScale = 0.2;
+            if (signScale > 3) signScale = 3;
+            renderPreview();
+        }
+        initialDistance = dist;
+    }
+}
+
+function downloadFinal() {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = previewCanvas.width;
+    tempCanvas.height = previewCanvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+
+    if (bgImage) {
+        tempCtx.drawImage(bgImage, 0, 0, tempCanvas.width, tempCanvas.height);
+    }
+    const w = signCanvas.width * signScale;
+    const h = signCanvas.height * signScale;
+    tempCtx.drawImage(signCanvas, signX, signY, w, h);
+
     const a = document.createElement('a');
-    a.download = "標示牌_透明外框.png";
-    a.href = canvas.toDataURL('image/png');
+    a.download = "門市照片_標示牌.png";
+    a.href = tempCanvas.toDataURL('image/png');
     a.click();
 }
 
-draw();
+drawSign();
 </script>
 </body>
 </html>
