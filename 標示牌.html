@@ -247,7 +247,8 @@ let initialDistance = 0;
 // 淺色清新日式背景
 const defaultBg = new Image();
 defaultBg.crossOrigin = "anonymous";
-defaultBg.src = "https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7?q=80&w=1000&auto=format&fit=crop";
+// 使用更高分辨率的默认背景图片
+defaultBg.src = "https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7?q=80&w=1600&auto=format&fit=crop";
 defaultBg.onload = function(){
     bgImage = defaultBg;
     // 放大预览画布尺寸，使用更大的尺寸以保持画质
@@ -358,14 +359,19 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
     const file = e.target.files[0];
     if (!file) return;
     
+    // 显示加载提示
+    alert('正在處理高質量圖片，請稍候...');
+    
     // 创建图片对象直接读取文件，避免FileReader可能的压缩
     const img = new Image();
+    img.crossOrigin = "anonymous"; // 确保可以访问图片数据
     img.onload = function () {
         bgImage = img;
-        // 限制上传图片的最大尺寸，但保持更好的质量
-        const maxWidth = 800; // 增大最大宽度以保持更好的画质
-        const maxHeight = 600; // 增大最大高度以保持更好的画质
-        const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+        
+        // 限制预览尺寸，但保持原始图片用于高质量导出
+        const maxPreviewWidth = 800;
+        const maxPreviewHeight = 600;
+        const scale = Math.min(maxPreviewWidth / img.width, maxPreviewHeight / img.height);
         
         // 确保Canvas使用整数尺寸以避免模糊
         previewCanvas.width = Math.floor(img.width * scale);
@@ -374,7 +380,11 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
         signScale = 0.8; // 缩小标示牌初始比例
         signX = previewCanvas.width - signCanvas.width * signScale - 50; // 确保在中右位置
         signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2; // 垂直居中
+        
         renderPreview();
+        
+        // 显示处理完成提示
+        alert('圖片處理完成！點擊"下載圖片"按鈕獲取高質量成品。');
     };
     
     // 使用createObjectURL而不是FileReader来避免不必要的编码/解码
@@ -440,29 +450,67 @@ function handleTouch(e) {
 }
 
 function downloadFinal() {
+    // 创建临时画布，使用原始图片尺寸而不是预览尺寸
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = previewCanvas.width;
-    tempCanvas.height = previewCanvas.height;
+    
+    // 计算原始图片的缩放比例，保持与预览相同的显示比例
+    let finalWidth, finalHeight;
+    if (bgImage) {
+        // 限制最大尺寸以避免过大的文件
+        const maxExportWidth = 1600;
+        const maxExportHeight = 1200;
+        const scale = Math.min(
+            maxExportWidth / bgImage.width,
+            maxExportHeight / bgImage.height,
+            1 // 不放大原图
+        );
+        finalWidth = Math.floor(bgImage.width * scale);
+        finalHeight = Math.floor(bgImage.height * scale);
+    } else {
+        finalWidth = previewCanvas.width;
+        finalHeight = previewCanvas.height;
+    }
+    
+    tempCanvas.width = finalWidth;
+    tempCanvas.height = finalHeight;
     const tempCtx = tempCanvas.getContext('2d');
     
-    // 设置高质量绘制参数
+    // 设置最高质量绘制参数
     tempCtx.imageSmoothingEnabled = true;
     tempCtx.imageSmoothingQuality = 'high';
     tempCtx.patternQuality = 'high';
     tempCtx.textRendering = 'optimizeLegibility';
+    tempCtx.antialias = 'subpixel';
+    tempCtx.lineCap = 'round';
+    tempCtx.lineJoin = 'round';
 
+    // 绘制背景图片，使用原始尺寸的高质量版本
     if (bgImage) {
-        tempCtx.drawImage(bgImage, 0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(bgImage, 0, 0, finalWidth, finalHeight);
     }
-    const w = signCanvas.width * signScale;
-    const h = signCanvas.height * signScale;
-    tempCtx.drawImage(signCanvas, signX, signY, w, h);
+    
+    // 计算标示牌在最终图片中的位置和大小
+    const previewToOriginalRatio = finalWidth / previewCanvas.width;
+    const finalSignWidth = signCanvas.width * signScale * previewToOriginalRatio;
+    const finalSignHeight = signCanvas.height * signScale * previewToOriginalRatio;
+    const finalSignX = signX * previewToOriginalRatio;
+    const finalSignY = signY * previewToOriginalRatio;
+    
+    // 绘制标示牌
+    tempCtx.drawImage(signCanvas, finalSignX, finalSignY, finalSignWidth, finalSignHeight);
 
+    // 创建下载链接
     const a = document.createElement('a');
     a.download = "門市照片_標示牌.png";
-    // 使用更高质量的PNG设置
+    
+    // 使用最高质量的PNG设置
     a.href = tempCanvas.toDataURL('image/png', 1.0);
+    
+    // 触发下载
     a.click();
+    
+    // 显示成功提示
+    alert('高質量圖片已下載！');
 }
 
 drawSign();
