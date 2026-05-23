@@ -39,11 +39,14 @@ h2 {
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     position: relative;
     overflow: hidden;
+    width: 100%;
+    max-width: 600px;
 }
 #previewCanvas {
     display: block;
     max-width: 100%;
     border-radius: 8px;
+    max-height: 500px;
 }
 .control {
     background: #fff;
@@ -162,7 +165,6 @@ input {
 canvas {
     display: block;
     margin: 0 auto;
-    width: 130px;
 }
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700&display=swap');
 </style>
@@ -248,11 +250,15 @@ defaultBg.crossOrigin = "anonymous";
 defaultBg.src = "https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7?q=80&w=1000&auto=format&fit=crop";
 defaultBg.onload = function(){
     bgImage = defaultBg;
-    previewCanvas.width = defaultBg.width;
-    previewCanvas.height = defaultBg.height;
-    signScale = 0.8;
-    signX = previewCanvas.width - signCanvas.width * signScale - 80;
-    signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2;
+    // 放大预览画布尺寸
+    const maxWidth = 600;
+    const maxHeight = 500;
+    const scale = Math.min(maxWidth / defaultBg.width, maxHeight / defaultBg.height);
+    previewCanvas.width = defaultBg.width * scale;
+    previewCanvas.height = defaultBg.height * scale;
+    signScale = 0.8; // 缩小标示牌初始比例
+    signX = previewCanvas.width - signCanvas.width * signScale - 50; // 调整为中右位置
+    signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2; // 垂直居中
     renderPreview();
 };
 
@@ -347,11 +353,15 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
         const img = new Image();
         img.onload = function () {
             bgImage = img;
-            previewCanvas.width = img.width;
-            previewCanvas.height = img.height;
-            signScale = 0.8;
-            signX = previewCanvas.width - signCanvas.width * signScale - 80;
-            signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2;
+            // 限制上传图片的最大尺寸
+            const maxWidth = 600;
+            const maxHeight = 500;
+            const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+            previewCanvas.width = img.width * scale;
+            previewCanvas.height = img.height * scale;
+            signScale = 0.8; // 缩小标示牌初始比例
+            signX = previewCanvas.width - signCanvas.width * signScale - 50; // 确保在中右位置
+            signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2; // 垂直居中
             renderPreview();
         };
         img.src = ev.target.result;
