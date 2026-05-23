@@ -250,12 +250,15 @@ defaultBg.crossOrigin = "anonymous";
 defaultBg.src = "https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7?q=80&w=1000&auto=format&fit=crop";
 defaultBg.onload = function(){
     bgImage = defaultBg;
-    // 放大预览画布尺寸
-    const maxWidth = 600;
-    const maxHeight = 500;
+    // 放大预览画布尺寸，使用更大的尺寸以保持画质
+    const maxWidth = 800;
+    const maxHeight = 600;
     const scale = Math.min(maxWidth / defaultBg.width, maxHeight / defaultBg.height);
-    previewCanvas.width = defaultBg.width * scale;
-    previewCanvas.height = defaultBg.height * scale;
+    
+    // 使用整数尺寸避免模糊
+    previewCanvas.width = Math.floor(defaultBg.width * scale);
+    previewCanvas.height = Math.floor(defaultBg.height * scale);
+    
     signScale = 0.8; // 缩小标示牌初始比例
     signX = previewCanvas.width - signCanvas.width * signScale - 50; // 调整为中右位置
     signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2; // 垂直居中
@@ -331,6 +334,12 @@ function drawSign() {
 function renderPreview() {
     if (!previewCanvas.width) return;
     previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    
+    // 提高Canvas绘制质量
+    previewCtx.imageSmoothingEnabled = true;
+    previewCtx.imageSmoothingQuality = 'high';
+    previewCtx.patternQuality = 'high';
+    previewCtx.textRendering = 'optimizeLegibility';
 
     if (bgImage) {
         previewCtx.drawImage(bgImage, 0, 0, previewCanvas.width, previewCanvas.height);
@@ -348,25 +357,28 @@ function redrawSign() {
 document.getElementById('fileInput').addEventListener('change', function (e) {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (ev) {
-        const img = new Image();
-        img.onload = function () {
-            bgImage = img;
-            // 限制上传图片的最大尺寸
-            const maxWidth = 600;
-            const maxHeight = 500;
-            const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
-            previewCanvas.width = img.width * scale;
-            previewCanvas.height = img.height * scale;
-            signScale = 0.8; // 缩小标示牌初始比例
-            signX = previewCanvas.width - signCanvas.width * signScale - 50; // 确保在中右位置
-            signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2; // 垂直居中
-            renderPreview();
-        };
-        img.src = ev.target.result;
+    
+    // 创建图片对象直接读取文件，避免FileReader可能的压缩
+    const img = new Image();
+    img.onload = function () {
+        bgImage = img;
+        // 限制上传图片的最大尺寸，但保持更好的质量
+        const maxWidth = 800; // 增大最大宽度以保持更好的画质
+        const maxHeight = 600; // 增大最大高度以保持更好的画质
+        const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+        
+        // 确保Canvas使用整数尺寸以避免模糊
+        previewCanvas.width = Math.floor(img.width * scale);
+        previewCanvas.height = Math.floor(img.height * scale);
+        
+        signScale = 0.8; // 缩小标示牌初始比例
+        signX = previewCanvas.width - signCanvas.width * signScale - 50; // 确保在中右位置
+        signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2; // 垂直居中
+        renderPreview();
     };
-    reader.readAsDataURL(file);
+    
+    // 使用createObjectURL而不是FileReader来避免不必要的编码/解码
+    img.src = URL.createObjectURL(file);
 });
 
 function startDrag(e) {
@@ -432,6 +444,12 @@ function downloadFinal() {
     tempCanvas.width = previewCanvas.width;
     tempCanvas.height = previewCanvas.height;
     const tempCtx = tempCanvas.getContext('2d');
+    
+    // 设置高质量绘制参数
+    tempCtx.imageSmoothingEnabled = true;
+    tempCtx.imageSmoothingQuality = 'high';
+    tempCtx.patternQuality = 'high';
+    tempCtx.textRendering = 'optimizeLegibility';
 
     if (bgImage) {
         tempCtx.drawImage(bgImage, 0, 0, tempCanvas.width, tempCanvas.height);
@@ -442,7 +460,8 @@ function downloadFinal() {
 
     const a = document.createElement('a');
     a.download = "門市照片_標示牌.png";
-    a.href = tempCanvas.toDataURL('image/png');
+    // 使用更高质量的PNG设置
+    a.href = tempCanvas.toDataURL('image/png', 1.0);
     a.click();
 }
 
