@@ -359,8 +359,7 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
     const file = e.target.files[0];
     if (!file) return;
     
-    // 显示加载提示
-    alert('正在處理高質量圖片，請稍候...');
+
     
     // 创建图片对象直接读取文件，避免FileReader可能的压缩
     const img = new Image();
@@ -382,9 +381,7 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
         signY = previewCanvas.height / 2 - signCanvas.height * signScale / 2; // 垂直居中
         
         renderPreview();
-        
-        // 显示处理完成提示
-        alert('圖片處理完成！點擊"下載圖片"按鈕獲取高質量成品。');
+
     };
     
     // 使用createObjectURL而不是FileReader来避免不必要的编码/解码
@@ -508,9 +505,7 @@ function downloadFinal() {
     
     // 触发下载
     a.click();
-    
-    // 显示成功提示
-    alert('高質量圖片已下載！');
+
 }
 
 drawSign();
