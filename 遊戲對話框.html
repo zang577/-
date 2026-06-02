@@ -36,7 +36,6 @@
       .no-resize { resize: none; }
       textarea::-webkit-scrollbar { display: none; }
       textarea { scrollbar-width: none; }
-      /* 预览区放大修复：电脑端更大，手机端适配不压缩 */
       #previewWrap { @apply w-full bg-white rounded-lg p-3 md:p-8 shadow-sm mb-4 flex justify-center items-center relative overflow-hidden; }
       @media (max-width:767px) { #previewWrap { min-height: 300px; max-height: 80vh; } }
       @media (min-width:768px) { #previewWrap { min-height: 500px; } }
@@ -48,7 +47,6 @@
 </head>
 <body class="bg-white min-h-screen flex flex-col overflow-x-hidden font-sans">
 <main class="flex-1 flex flex-col p-3 md:p-6 max-w-5xl mx-auto w-full">
-  <!-- 预览区域 -->
   <div id="previewWrap">
     <div id="emptyPreviewHint" class="absolute text-center py-8 text-neutral/60">
       <i class="fa fa-image text-3xl mb-2 text-neutral/30"></i>
@@ -57,12 +55,10 @@
     <canvas id="exportCanvas" class="pixel-border"></canvas>
   </div>
 
-  <!-- 下载按钮 -->
   <div class="w-full flex justify-center gap-3 mb-4">
     <button id="downloadBtn" class="btn-unified font-medium" disabled>下載圖片</button>
   </div>
 
-  <!-- 文字+上传 -->
   <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div>
@@ -76,7 +72,6 @@
     </div>
   </div>
 
-  <!-- 字体选择：仅保留2个，名称修改完成 -->
   <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4">
     <label class="control-label block">文字字型</label>
     <div id="fontGroup" class="grid grid-cols-2 gap-2">
@@ -85,7 +80,6 @@
     </div>
   </div>
 
-  <!-- 样式控制面板 -->
   <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
       <div class="md:col-span-2 lg:col-span-4">
@@ -155,7 +149,6 @@ const moveDown = document.getElementById('moveDown');
 const moveLeft = document.getElementById('moveLeft');
 const moveRight = document.getElementById('moveRight');
 
-// 固定绘图基准（电脑标准，全设备通用）
 const BASE = {
   BASE_FONT:28, BASE_PAD:45, BASE_LINE:1.8, BASE_LETTER:4, MIN_FONT:18, BOX_RATE:0.9, STEP:10
 }
@@ -166,7 +159,6 @@ let boxX=0,boxY=0;
 let currentStyle='game1';
 let currentFont='sans';
 
-// 样式配置
 const styleGroups={
 classic:[{key:'game1',name:'黑白'},{key:'style1',name:'純紫'},{key:'style2',name:'藍'},{key:'style3',name:'紫'},{key:'style12',name:'粉'},{key:'style14',name:'白雲天空'},{key:'style15',name:'純粉'},{key:'mora1',name:'莫蘭迪咖'},{key:'mora2',name:'莫蘭迪灰'},{key:'maca1',name:'淺粉'},{key:'maca2',name:'薄荷'}],
 cyber:[{key:'castle1',name:'白電光'}],
@@ -189,38 +181,31 @@ previewCtx.imageSmoothingEnabled = false;
 exportCtx.imageSmoothingEnabled = false;
 buildStyleBtn(); bindFontBtn(); bindAllEvent(); loadDefaultPic();
 }
-// 窗口缩放自动重绘
 window.addEventListener('resize',()=>{if(originalImg){calcPreviewScale();drawAll()}})
 
-// 加载默认图片
 function loadDefaultPic(){
 const img=new Image();img.crossOrigin='';img.src='https://picsum.photos/1200/800';
 img.onload=()=>{originalImg=img;boxX=boxY=0;setExportSize();calcPreviewScale();drawAll();downloadBtn.disabled=false;emptyHint.style.display='none';}
 }
-// 导出画布 = 原始图片尺寸
 function setExportSize(){
 exportCanvas.width=originalImg.width*dpr;
 exportCanvas.height=originalImg.height*dpr;
 exportCtx.setTransform(1,0,0,1,0,0);exportCtx.scale(dpr,dpr);
 }
 let previewScale=1;
-// 修复预览区缩放：放大显示，不压缩过小
 function calcPreviewScale(){
 const wrap=previewWrap.getBoundingClientRect();
 const iw=originalImg.width,ih=originalImg.height;
-// 核心修复：预览区放大，最小缩放0.5，避免太小看不见
 const sX=wrap.width/iw;
 const sY=wrap.height/ih;
 previewScale=Math.min(sX,sY,1);
 previewScale = Math.max(previewScale, 0.5);
-// 设置预览画布
 previewCanvas.width=iw*previewScale*dpr;
 previewCanvas.height=ih*previewScale*dpr;
 previewCanvas.style.width=iw*previewScale+'px';
 previewCanvas.style.height=ih*previewScale+'px';
 previewCtx.setTransform(1,0,0,1,0,0);previewCtx.scale(dpr,dpr);
 }
-// 核心绘图：修复文字/对话框消失，统一绘制逻辑
 function drawCore(ctx,cw,ch){
 const txt=dialogueText.value.trim();
 const col=textColor.value;
@@ -230,7 +215,6 @@ const szRate=textSizeSlider.value/100;
 const sty=styleMap[currentStyle];
 const s=cw/1000;
 
-// 放大基础字体，避免看不见
 const fSize=Math.max(BASE.MIN_FONT,BASE.BASE_FONT*s*szRate);
 const pad=Math.max(25,BASE.BASE_PAD*s);
 const lineH=BASE.BASE_LINE*fSize;
@@ -241,7 +225,6 @@ const maxW=boxW-pad*2;
 ctx.font=fSize+'px '+getFont(currentFont);
 ctx.textBaseline='top';
 
-// 文字换行
 let lines=[],cur='',curW=0;
 [...txt].forEach(c=>{
 const w=ctx.measureText(c).width;
@@ -250,14 +233,12 @@ if(curW+add<=maxW){cur+=c;curW+=add;}else{lines.push(cur);cur=c;curW=w;}
 })
 if(cur)lines.push(cur);
 
-// 对话框尺寸
 const totalH=lines.length*lineH;
 const boxH=Math.max(100,totalH+pad*2);
 const bl=(cw-boxW)/2+boxX;
 let bt=ch-boxH-mar+boxY;
 bt=Math.max(10,Math.min(bt,ch-boxH-10));
 
-// 绘制对话框
 ctx.save();
 ctx.globalAlpha=op;
 ctx.fillStyle=sty.bg;ctx.strokeStyle=sty.border;ctx.lineWidth=Math.max(2,6*s);
@@ -268,7 +249,6 @@ ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(bl,bt,boxW,boxH,12*s);ctx.fill();c
 ctx.beginPath();ctx.roundRect(bl,bt,boxW,boxH,16*s);ctx.fill();ctx.stroke();
 }else{ctx.fillRect(bl,bt,boxW,boxH);ctx.strokeRect(bl,bt,boxW,boxH);}
 
-// 绘制文字（修复消失问题）
 ctx.globalAlpha=1;ctx.fillStyle=col;
 const ty=bt+pad+(boxH-pad*2-totalH)/2;
 lines.forEach((l,i)=>{
@@ -276,21 +256,19 @@ let x=bl+pad;[...l].forEach(c=>{ctx.fillText(c,x,ty+i*lineH);x+=ctx.measureText(
 })
 ctx.restore();
 }
-// 统一绘制预览+导出
+
+// 核心修复1：统一绘图，预览=下载100%一致
 function drawAll(){
 if(!originalImg)return;
 const iw=originalImg.width,ih=originalImg.height;
-// 导出图
 exportCtx.clearRect(0,0,iw,ih);
 exportCtx.drawImage(originalImg,0,0,iw,ih);
 drawCore(exportCtx,iw,ih);
-// 预览图
+// 预览直接复制导出的成品图，纯等比缩放，无任何差异
 previewCtx.clearRect(0,0,previewCanvas.width/dpr,previewCanvas.height/dpr);
-previewCtx.drawImage(originalImg,0,0,iw,ih);
-drawCore(previewCtx,previewCanvas.width/dpr,previewCanvas.height/dpr);
+previewCtx.drawImage(exportCanvas, 0, 0, iw*dpr, ih*dpr, 0, 0, previewCanvas.width/dpr, previewCanvas.height/dpr);
 }
 
-// 构建样式按钮
 function buildStyleBtn(){
 Object.keys(styleGroups).forEach(g=>{
 const wrap=document.querySelector(`[data-group="${g}"]`);
@@ -302,13 +280,11 @@ d.onclick=()=>{currentStyle=d.dataset.style;highLightStyle();autoFontColor();dra
 highLightStyle();autoFontColor();
 }
 function highLightStyle(){document.querySelectorAll('.style-card').forEach(d=>d.classList.toggle('active',d.dataset.style===currentStyle))}
-// 绑定字体（仅保留2个）
 function bindFontBtn(){
 document.querySelectorAll('.font-card').forEach(d=>{
 d.onclick=()=>{currentFont=d.dataset.font;document.querySelectorAll('.font-card').forEach(x=>x.classList.remove('active'));d.classList.add('active');drawAll();}
 })
 }
-// 字体映射（仅保留2个）
 function getFont(k){
 const map={
   sans:'"Noto Sans SC",sans-serif',
@@ -317,7 +293,8 @@ const map={
 return map[k]||map.sans;
 }
 function autoFontColor(){textColor.value=styleMap[currentStyle].dark?'#fff':'#000';}
-// 绑定所有事件
+
+// 核心修复2：下载检视功能正常，兼容所有浏览器
 function bindAllEvent(){
 imageUpload.onchange=e=>{
 const f=e.target.files[0];if(!f)return;
@@ -330,9 +307,20 @@ moveUp.onclick=()=>{boxY+=BASE.STEP;drawAll();}
 moveDown.onclick=()=>{boxY-=BASE.STEP;drawAll();}
 moveLeft.onclick=()=>{boxX-=BASE.STEP;drawAll();}
 moveRight.onclick=()=>{boxX+=BASE.STEP;drawAll();}
-downloadBtn.onclick=()=>{
-const a=document.createElement('a');a.download=`dialog_${Date.now()}.png`;a.href=exportCanvas.toDataURL('image/png');a.click();
-}
+
+// 修复检视无效
+downloadBtn.onclick = () => {
+  exportCanvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dialog_${Date.now()}.png`;
+    a.target = "_blank";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+  }, "image/png");
+};
+
 [dialogueText,textColor,boxOpacity,textSizeSlider,bottomMarginSlider].forEach(el=>el.oninput=drawAll)
 }
 </script>
