@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
-  <title>對話框生成器</title>
+  <title>遊戲對話框</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -100,20 +100,22 @@
         <label class="control-label block">對話框透明度</label>
         <div class="flex items-center gap-2">
           <input type="range" id="boxOpacity" min="0.1" max="1" step="0.1" value="1" class="w-full accent-primary">
-          <span class="text-xs text-neutral/60 w-10">100%</span>
+          <span id="boxOpacityValue" class="text-xs text-neutral/60 w-10">100%</span>
         </div>
       </div>
       <div>
         <label class="control-label block">文字大小 (%)</label>
         <div class="flex items-center gap-2">
-          <input type="range" id="textSizeSlider" min="50" max="150" step="10" value="90" class="w-full accent-primary">
-          <span class="text-xs text-neutral/60 w-12">90%</span>
+          <input type="range" id="textSizeSlider" min="50" max="150" step="10" value="100" class="w-full accent-primary">
+          <span id="textSizeValue" class="text-xs text-neutral/60 w-12">100%</span>
         </div>
       </div>
       <div>
         <label class="control-label block">底部留白距離 (%)</label>
-        <input type="range" id="bottomMarginSlider" min="0" max="15" step="0.5" value="8" class="w-full accent-primary">
-        <span class="text-xs text-neutral/60 w-10">8%</span>
+        <div class="flex items-center gap-2">
+          <input type="range" id="bottomMarginSlider" min="0" max="15" step="0.5" value="8" class="w-full accent-primary">
+          <span id="bottomMarginValue" class="text-xs text-neutral/60 w-10">8%</span>
+        </div>
       </div>
       <div class="lg:col-span-4 md:col-span-2 col-span-1">
         <label class="control-label block">位置微調</label>
@@ -140,8 +142,11 @@ const downloadBtn = document.getElementById('downloadBtn');
 const dialogueText = document.getElementById('dialogueText');
 const textColor = document.getElementById('textColor');
 const boxOpacity = document.getElementById('boxOpacity');
+const boxOpacityValue = document.getElementById('boxOpacityValue');
 const textSizeSlider = document.getElementById('textSizeSlider');
+const textSizeValue = document.getElementById('textSizeValue');
 const bottomMarginSlider = document.getElementById('bottomMarginSlider');
+const bottomMarginValue = document.getElementById('bottomMarginValue');
 const imageUpload = document.getElementById('imageUpload');
 const resetPosition = document.getElementById('resetPosition');
 const moveUp = document.getElementById('moveUp');
@@ -180,6 +185,8 @@ window.onload=()=>{
 previewCtx.imageSmoothingEnabled = false;
 exportCtx.imageSmoothingEnabled = false;
 buildStyleBtn(); bindFontBtn(); bindAllEvent(); loadDefaultPic();
+// 初始化显示拉杆数值
+updateSliderValues();
 }
 window.addEventListener('resize',()=>{if(originalImg){calcPreviewScale();drawAll()}})
 
@@ -222,8 +229,10 @@ const letW=BASE.BASE_LETTER*s;
 const boxW=cw*BASE.BOX_RATE;
 const maxW=boxW-pad*2;
 
+// 修复1：字体切换+垂直居中
 ctx.font=fSize+'px '+getFont(currentFont);
-ctx.textBaseline='top';
+ctx.textBaseline='middle'; // 关键修复：垂直居中基准线
+ctx.textAlign='left';
 
 let lines=[],cur='',curW=0;
 [...txt].forEach(c=>{
@@ -250,9 +259,13 @@ ctx.beginPath();ctx.roundRect(bl,bt,boxW,boxH,16*s);ctx.fill();ctx.stroke();
 }else{ctx.fillRect(bl,bt,boxW,boxH);ctx.strokeRect(bl,bt,boxW,boxH);}
 
 ctx.globalAlpha=1;ctx.fillStyle=col;
-const ty=bt+pad+(boxH-pad*2-totalH)/2;
+// 修复1：精确垂直居中计算
+const ty=bt+pad+(boxH-pad*2)/2; // 对话框垂直中心
 lines.forEach((l,i)=>{
-let x=bl+pad;[...l].forEach(c=>{ctx.fillText(c,x,ty+i*lineH);x+=ctx.measureText(c).width+letW;})
+let x=bl+pad;
+// 单行文本垂直居中
+const lineY=ty-(totalH/2)+(i*lineH)+(lineH/2);
+[...l].forEach(c=>{ctx.fillText(c,x,lineY);x+=ctx.measureText(c).width+letW;})
 })
 ctx.restore();
 }
@@ -282,7 +295,13 @@ highLightStyle();autoFontColor();
 function highLightStyle(){document.querySelectorAll('.style-card').forEach(d=>d.classList.toggle('active',d.dataset.style===currentStyle))}
 function bindFontBtn(){
 document.querySelectorAll('.font-card').forEach(d=>{
-d.onclick=()=>{currentFont=d.dataset.font;document.querySelectorAll('.font-card').forEach(x=>x.classList.remove('active'));d.classList.add('active');drawAll();}
+d.onclick=()=>{
+  currentFont=d.dataset.font;
+  document.querySelectorAll('.font-card').forEach(x=>x.classList.remove('active'));
+  d.classList.add('active');
+  // 修复1：强制重绘确保字体切换生效
+  setTimeout(drawAll, 50);
+}
 })
 }
 function getFont(k){
@@ -294,6 +313,13 @@ return map[k]||map.sans;
 }
 function autoFontColor(){textColor.value=styleMap[currentStyle].dark?'#fff':'#000';}
 
+// 修复2：实时更新拉杆数值
+function updateSliderValues(){
+boxOpacityValue.textContent = Math.round(boxOpacity.value * 100) + '%';
+textSizeValue.textContent = textSizeSlider.value + '%';
+bottomMarginValue.textContent = bottomMarginSlider.value + '%';
+}
+
 // 核心修复2：下载检视功能正常，兼容所有浏览器
 function bindAllEvent(){
 imageUpload.onchange=e=>{
@@ -303,10 +329,11 @@ const img=new Image();img.onload=()=>{originalImg=img;boxX=boxY=0;setExportSize(
 };fr.readAsDataURL(f);
 }
 resetPosition.onclick=()=>{boxX=boxY=0;drawAll();}
-moveUp.onclick=()=>{boxY+=BASE.STEP;drawAll();}
-moveDown.onclick=()=>{boxY-=BASE.STEP;drawAll();}
-moveLeft.onclick=()=>{boxX-=BASE.STEP;drawAll();}
-moveRight.onclick=()=>{boxX+=BASE.STEP;drawAll();}
+// 修复3：上下按钮方向修正
+moveUp.onclick=()=>{boxY -= BASE.STEP; drawAll();} // 上移：减少Y坐标
+moveDown.onclick=()=>{boxY += BASE.STEP; drawAll();} // 下移：增加Y坐标
+moveLeft.onclick=()=>{boxX -= BASE.STEP; drawAll();}
+moveRight.onclick=()=>{boxX += BASE.STEP; drawAll();}
 
 // 修复检视无效
 downloadBtn.onclick = () => {
@@ -321,7 +348,12 @@ downloadBtn.onclick = () => {
   }, "image/png");
 };
 
-[dialogueText,textColor,boxOpacity,textSizeSlider,bottomMarginSlider].forEach(el=>el.oninput=drawAll)
+// 绑定拉杆实时更新事件
+boxOpacity.addEventListener('input', () => { updateSliderValues(); drawAll(); });
+textSizeSlider.addEventListener('input', () => { updateSliderValues(); drawAll(); });
+bottomMarginSlider.addEventListener('input', () => { updateSliderValues(); drawAll(); });
+
+[dialogueText,textColor].forEach(el=>el.oninput=drawAll)
 }
 </script>
 </body>
