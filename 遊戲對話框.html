@@ -24,8 +24,7 @@
       .no-resize { resize: none; }
       textarea::-webkit-scrollbar { display: none; }
       textarea { scrollbar-width: none; }
-      #previewCanvas { max-width: 800px; width: 100%; cursor: grab; touch-action: manipulation; }
-      #previewCanvas:active { cursor: grabbing; }
+      #previewCanvas { max-width: 800px; width: 100%; }
       #exportCanvas { display: none; }
       .position-btn { @apply flex-1 p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center text-base; }
       .position-btn:hover { @apply border-primary bg-primary/5; }
@@ -35,7 +34,6 @@
 <body class="bg-secondary min-h-screen flex flex-col overflow-x-hidden font-sans">
   <main class="flex-1 flex flex-col p-4 md:p-6 max-w-5xl mx-auto w-full">
     <div class="w-full bg-white rounded-lg p-4 md:p-6 shadow-sm mb-4 overflow-hidden flex justify-center relative">
-      <!-- 修复1：删除上传提示文字，只保留图标 -->
       <div id="emptyPreviewHint" class="text-center py-12 text-neutral/60">
         <i class="fa fa-image text-4xl mb-3 text-neutral/30"></i><br>
       </div>
@@ -45,7 +43,6 @@
 
     <div class="w-full flex justify-center gap-3 mb-4">
       <button id="downloadBtn" class="btn-unified font-medium" disabled>下載圖片</button>
-      <button id="storyModeBtn" class="btn-unified font-medium">限動模式</button>
     </div>
 
     <div class="w-full bg-white rounded-lg p-4 md:p-6 shadow-sm mb-4">
@@ -124,7 +121,6 @@
     const exportCtx = exportCanvas.getContext('2d');
     const emptyHint = document.getElementById('emptyPreviewHint');
     const downloadBtn = document.getElementById('downloadBtn');
-    const storyModeBtn = document.getElementById('storyModeBtn');
     const dialogueText = document.getElementById('dialogueText');
     const textColor = document.getElementById('textColor');
     const boxOpacity = document.getElementById('boxOpacity');
@@ -139,8 +135,6 @@
 
     const PREVIEW_MAX_WIDTH = 800;
     const MOVE_STEP = 10;
-    const STORY_ASPECT = 9/16;
-    const STORY_BOTTOM = 0.12;
     const BASE_FONT = 24;
     const BASE_PAD = 40;
     const BASE_LINE = 1.8;
@@ -149,11 +143,9 @@
 
     let originalImg = null;
     let dpr = window.devicePixelRatio || 1;
-    let isStory = false;
     let boxX = 0, boxY = 0;
-    let imgX = 0, imgY = 0, imgScale = 1, minScale = 1;
+
     let currentStyle = 'game1';
-    let isDrag = false, startX = 0, startY = 0;
 
     const styleGroups = {
       classic: [{key:'game1',name:'黑白'},{key:'style1',name:'純紫'},{key:'style2',name:'藍'},{key:'style3',name:'紫'},{key:'style12',name:'粉'},{key:'style14',name:'白雲天空'},{key:'style15',name:'純粉'},{key:'mora1',name:'莫蘭迪咖'},{key:'mora2',name:'莫蘭迪灰'},{key:'maca1',name:'淺粉'},{key:'maca2',name:'薄荷'}],
@@ -195,8 +187,7 @@
     }
 
     function resetAll() {
-      boxX = boxY = imgX = imgY = 0;
-      imgScale = minScale;
+      boxX = boxY = 0;
     }
 
     function buildStyles() {
@@ -219,45 +210,20 @@
       document.querySelectorAll('.style-card').forEach(c => c.classList.toggle('active', c.dataset.style === currentStyle));
     }
 
-    // 核心修复2：限动模式图片比例修正，确保只填满不放大
     function updateCanvas() {
       if (!originalImg) return;
       let w = originalImg.width, h = originalImg.height;
-      let displayW = w, displayH = h;
 
-      if (isStory) {
-        // 9:16 画布尺寸，以原图宽度为基准
-        displayH = displayW / STORY_ASPECT;
-        
-        // 计算最小缩放比例：刚好填满画布，不额外放大
-        const imgAspect = w / h;
-        if (imgAspect > STORY_ASPECT) {
-          // 图片更宽，按高度匹配
-          minScale = displayH / h;
-        } else {
-          // 图片更高，按宽度匹配
-          minScale = displayW / w;
-        }
-      }
-
-      exportCanvas.width = displayW * dpr;
-      exportCanvas.height = displayH * dpr;
+      exportCanvas.width = w * dpr;
+      exportCanvas.height = h * dpr;
       exportCtx.setTransform(1,0,0,1,0,0); exportCtx.scale(dpr,dpr);
 
-      const scale = Math.min(PREVIEW_MAX_WIDTH / displayW, 1);
-      previewCanvas.width = displayW * scale * dpr;
-      previewCanvas.height = displayH * scale * dpr;
-      previewCanvas.style.width = `${displayW * scale}px`;
-      previewCanvas.style.height = `${displayH * scale}px`;
+      const scale = Math.min(PREVIEW_MAX_WIDTH / w, 1);
+      previewCanvas.width = w * scale * dpr;
+      previewCanvas.height = h * scale * dpr;
+      previewCanvas.style.width = `${w * scale}px`;
+      previewCanvas.style.height = `${h * scale}px`;
       previewCtx.setTransform(1,0,0,1,0,0); previewCtx.scale(dpr,dpr);
-    }
-
-    function clampImg() {
-      if (!isStory) return;
-      const cw = previewCanvas.width/dpr, ch = previewCanvas.height/dpr;
-      const iw = originalImg.width*imgScale, ih = originalImg.height*imgScale;
-      imgX = Math.max(Math.min(imgX, 0), cw - iw);
-      imgY = Math.max(Math.min(imgY, 0), ch - ih);
     }
 
     function redraw() {
@@ -268,19 +234,12 @@
         const ch = i===0 ? previewCanvas.height/dpr : exportCanvas.height/dpr;
         ctx.clearRect(0,0,cw,ch);
 
-        // 绘制图片：保持原始比例，绝不拉伸
-        if (isStory) {
-          const iw = originalImg.width * imgScale;
-          const ih = originalImg.height * imgScale;
-          ctx.drawImage(originalImg, imgX, imgY, iw, ih);
-        } else {
-          ctx.drawImage(originalImg, 0,0,cw,ch);
-        }
+        ctx.drawImage(originalImg, 0,0,cw,ch);
 
         const text = dialogueText.value.trim();
         const color = textColor.value;
         const opacity = +boxOpacity.value;
-        const margin = isStory ? ch*STORY_BOTTOM : (bottomMarginSlider.value/100)*ch;
+        const margin = (bottomMarginSlider.value/100)*ch;
         const sizeRate = textSizeSlider.value/100;
         const style = styleMap[currentStyle];
 
@@ -326,7 +285,6 @@
           ctx.fillRect(boxLeft,boxTop,boxW,boxH); ctx.strokeRect(boxLeft,boxTop,boxW,boxH);
         }
 
-        // 文字垂直居中（全平台生效）
         ctx.globalAlpha = 1; ctx.fillStyle = color;
         const textY = boxTop + pad + (boxH - pad*2 - totalH)/2;
         lines.forEach((line, i) => {
@@ -338,33 +296,6 @@
     }
 
     function bindEvents() {
-      // 拖拽/缩放
-      previewCanvas.onmousedown = (e) => { if(isStory){ isDrag=true; startX=e.clientX; startY=e.clientY; } };
-      window.onmousemove = (e) => {
-        if(!isDrag) return;
-        imgX += (e.clientX-startX)/ (previewCanvas.width/dpr / exportCanvas.width);
-        imgY += (e.clientY-startY)/ (previewCanvas.height/dpr / exportCanvas.height);
-        startX=e.clientX; startY=e.clientY; clampImg(); redraw();
-      };
-      window.onmouseup = () => isDrag=false;
-      
-      // 修复3：滚轮缩放，阻止默认滚动行为
-      previewCanvas.addEventListener('wheel', (e) => {
-        if(!isStory) return; 
-        e.preventDefault(); // 关键：阻止页面滚动，确保滚轮只控制图片缩放
-        imgScale *= e.deltaY>0 ? 0.9 : 1.1;
-        imgScale = Math.max(imgScale, minScale); 
-        clampImg(); 
-        redraw();
-      }, { passive: false }); // 确保可以阻止默认行为
-
-      // 限动模式切换
-      storyModeBtn.onclick = () => {
-        isStory = !isStory;
-        storyModeBtn.classList.toggle('active');
-        resetAll(); updateCanvas(); redraw();
-      };
-
       // 上传图片
       imageUpload.onchange = (e) => {
         const f = e.target.files[0]; if(!f) return;
