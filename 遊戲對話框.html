@@ -6,29 +6,20 @@
   <title>對話框生成器</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
-  <!-- 可商用字体 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fusion+Pixel&family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fusion+Pixel&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
-      theme: { 
-        extend: { 
-          // 莫兰迪配色
-          colors: { 
-            primary: '#8A959E', 
-            secondary: '#F8F9FA', 
-            neutral: '#6B7280' 
-          }, 
-          fontFamily: { 
+      theme: {
+        extend: {
+          colors: { primary: '#8A959E', secondary: '#F8F9FA', neutral: '#6B7280' },
+          fontFamily: {
             sans: ['"Noto Sans SC"', 'system-ui', 'sans-serif'],
-            pixel: ['"Fusion Pixel"', 'monospace'],
-            msz: ['"Ma Shan Zheng"', 'cursive'],
-            kuaile: ['"ZCOOL KuaiLe"', 'sans-serif'],
-            huangyou: ['"ZCOOL QingKe HuangYou"', 'sans-serif']
-          } 
-        } 
-      } 
+            pixel: ['"Fusion Pixel"', 'monospace']
+          }
+        }
+      }
     }
   </script>
   <style type="text/tailwindcss">
@@ -45,441 +36,305 @@
       .no-resize { resize: none; }
       textarea::-webkit-scrollbar { display: none; }
       textarea { scrollbar-width: none; }
-      /* 核心修复：电脑/手机差异化预览容器 */
-      #previewContainer {
-        @apply w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4 overflow-hidden flex justify-center items-center relative;
-      }
-      /* 手机端严格限制高度，电脑端不限制高度 */
-      @media (max-width: 767px) {
-        #previewContainer { max-height: 70vh; min-height: 200px; }
-      }
-      @media (min-width: 768px) {
-        #previewContainer { max-height: none; min-height: 400px; }
-      }
-      #previewCanvas {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain; /* 确保图片完整显示不溢出 */
-      }
-      @media (min-width: 768px) {
-        #previewCanvas { max-width: 800px; } /* 电脑端恢复最大宽度800px */
-      }
-      #exportCanvas { display: none; }
+      /* 预览区放大修复：电脑端更大，手机端适配不压缩 */
+      #previewWrap { @apply w-full bg-white rounded-lg p-3 md:p-8 shadow-sm mb-4 flex justify-center items-center relative overflow-hidden; }
+      @media (max-width:767px) { #previewWrap { min-height: 300px; max-height: 80vh; } }
+      @media (min-width:768px) { #previewWrap { min-height: 500px; } }
+      #previewCanvas { max-width:100%; max-height:100%; object-fit: contain; }
+      #exportCanvas { display:none; }
       .position-btn { @apply flex-1 p-2 md:p-3 border border-gray-200 rounded-md hover:bg-primary/5 transition-colors duration-200 flex items-center justify-center text-sm md:text-base; }
     }
   </style>
 </head>
-<!-- 网页背景纯白 -->
 <body class="bg-white min-h-screen flex flex-col overflow-x-hidden font-sans">
-  <main class="flex-1 flex flex-col p-3 md:p-6 max-w-5xl mx-auto w-full">
-    <!-- 预览区域：新增容器严格限制高度 -->
-    <div id="previewContainer">
-      <div id="emptyPreviewHint" class="text-center py-8 text-neutral/60 absolute">
-        <i class="fa fa-image text-3xl mb-2 text-neutral/30"></i>
+<main class="flex-1 flex flex-col p-3 md:p-6 max-w-5xl mx-auto w-full">
+  <!-- 预览区域 -->
+  <div id="previewWrap">
+    <div id="emptyPreviewHint" class="absolute text-center py-8 text-neutral/60">
+      <i class="fa fa-image text-3xl mb-2 text-neutral/30"></i>
+    </div>
+    <canvas id="previewCanvas" class="pixel-border rounded"></canvas>
+    <canvas id="exportCanvas" class="pixel-border"></canvas>
+  </div>
+
+  <!-- 下载按钮 -->
+  <div class="w-full flex justify-center gap-3 mb-4">
+    <button id="downloadBtn" class="btn-unified font-medium" disabled>下載圖片</button>
+  </div>
+
+  <!-- 文字+上传 -->
+  <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <label class="control-label block">對話文字</label>
+        <textarea id="dialogueText" rows="2" class="w-full p-2 border border-gray-200 rounded-md no-resize text-sm" placeholder="輸入對話內容...">風吹過街巷 溫柔藏日常 美好一直在身旁</textarea>
       </div>
-      <canvas id="previewCanvas" class="pixel-border rounded"></canvas>
-      <canvas id="exportCanvas" class="pixel-border"></canvas>
-    </div>
-
-    <!-- 下载按钮 -->
-    <div class="w-full flex justify-center gap-3 mb-4">
-      <button id="downloadBtn" class="btn-unified font-medium" disabled>下載圖片</button>
-    </div>
-
-    <!-- 文字+上传 -->
-    <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label class="control-label block">對話文字</label>
-          <textarea id="dialogueText" rows="2" class="w-full p-2 border border-gray-200 rounded-md no-resize text-sm" placeholder="輸入對話內容...">風吹過街巷 溫柔藏日常 美好一直在身旁</textarea>
-        </div>
-        <div>
-          <label class="control-label block">上傳背景圖</label>
-          <input type="file" id="imageUpload" accept="image/*" class="w-full p-2 border border-gray-200 rounded-md text-sm">
-        </div>
-      </div>
-    </div>
-
-    <!-- 字体选择 -->
-    <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4">
-      <label class="control-label block">文字字型</label>
-      <div id="fontGroup" class="grid grid-cols-3 sm:grid-cols-5 gap-2">
-        <div data-font="sans" class="font-card active">思源黑体</div>
-        <div data-font="msz" class="font-card">马善政手写</div>
-        <div data-font="kuaile" class="font-card">站酷快乐体</div>
-        <div data-font="huangyou" class="font-card">黄油体</div>
-        <div data-font="pixel" class="font-card">缝合怪像素体</div>
+      <div>
+        <label class="control-label block">上傳背景圖</label>
+        <input type="file" id="imageUpload" accept="image/*" class="w-full p-2 border border-gray-200 rounded-md text-sm">
       </div>
     </div>
+  </div>
 
-    <!-- 样式+控制面板 -->
-    <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="md:col-span-2 lg:col-span-4">
-          <div class="style-group-title">經典</div>
-          <div data-group="classic" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3"></div>
-          <div class="style-group-title">特調</div>
-          <div data-group="new" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3"></div>
-          <div class="style-group-title">透明</div>
-          <div data-group="transparent" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3"></div>
-          <div class="style-group-title">賽博</div>
-          <div data-group="cyber" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
-        </div>
+  <!-- 字体选择：仅保留2个，名称修改完成 -->
+  <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4">
+    <label class="control-label block">文字字型</label>
+    <div id="fontGroup" class="grid grid-cols-2 gap-2">
+      <div data-font="sans" class="font-card active">思源黑體</div>
+      <div data-font="pixel" class="font-card">縫合怪像素體</div>
+    </div>
+  </div>
 
-        <div>
-          <label class="control-label block">文字顏色</label>
-          <input type="color" id="textColor" value="#000000" class="w-full h-9 border-0 rounded-md cursor-pointer">
+  <!-- 样式控制面板 -->
+  <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="md:col-span-2 lg:col-span-4">
+        <div class="style-group-title">經典</div>
+        <div data-group="classic" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3"></div>
+        <div class="style-group-title">特調</div>
+        <div data-group="new" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3"></div>
+        <div class="style-group-title">透明</div>
+        <div data-group="transparent" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3"></div>
+        <div class="style-group-title">賽博</div>
+        <div data-group="cyber" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+      </div>
+      <div>
+        <label class="control-label block">文字顏色</label>
+        <input type="color" id="textColor" value="#000000" class="w-full h-9 border-0 rounded-md cursor-pointer">
+      </div>
+      <div>
+        <label class="control-label block">對話框透明度</label>
+        <div class="flex items-center gap-2">
+          <input type="range" id="boxOpacity" min="0.1" max="1" step="0.1" value="1" class="w-full accent-primary">
+          <span class="text-xs text-neutral/60 w-10">100%</span>
         </div>
-        <div>
-          <label class="control-label block">對話框透明度</label>
-          <div class="flex items-center gap-2">
-            <input type="range" id="boxOpacity" min="0.1" max="1" step="0.1" value="1" class="w-full accent-primary">
-            <span id="boxOpacityVal" class="text-xs text-neutral/60 w-10">100%</span>
-          </div>
+      </div>
+      <div>
+        <label class="control-label block">文字大小 (%)</label>
+        <div class="flex items-center gap-2">
+          <input type="range" id="textSizeSlider" min="50" max="150" step="10" value="90" class="w-full accent-primary">
+          <span class="text-xs text-neutral/60 w-12">90%</span>
         </div>
-        <div>
-          <label class="control-label block">文字大小 (%)</label>
-          <div class="flex items-center gap-2">
-            <input type="range" id="textSizeSlider" min="50" max="150" step="10" value="90" class="w-full accent-primary">
-            <span id="textSizeVal" class="text-xs text-neutral/60 w-12">90%</span>
-          </div>
-        </div>
-        <div>
-          <label class="control-label block">底部留白距離 (%)</label>
-          <input type="range" id="bottomMarginSlider" min="0" max="15" step="0.5" value="8" class="w-full accent-primary">
-          <span id="bottomMarginVal" class="text-xs text-neutral/60 w-10">8%</span>
-        </div>
-
-        <div class="lg:col-span-4 md:col-span-2 col-span-1">
-          <label class="control-label block">位置微調</label>
-          <div class="flex gap-2">
-            <button id="resetPosition" class="position-btn" title="重置位置"><i class="fa fa-circle"></i></button>
-            <button id="moveUp" class="position-btn"><i class="fa fa-arrow-up"></i></button>
-            <button id="moveDown" class="position-btn"><i class="fa fa-arrow-down"></i></button>
-            <button id="moveLeft" class="position-btn"><i class="fa fa-arrow-left"></i></button>
-            <button id="moveRight" class="position-btn"><i class="fa fa-arrow-right"></i></button>
-          </div>
+      </div>
+      <div>
+        <label class="control-label block">底部留白距離 (%)</label>
+        <input type="range" id="bottomMarginSlider" min="0" max="15" step="0.5" value="8" class="w-full accent-primary">
+        <span class="text-xs text-neutral/60 w-10">8%</span>
+      </div>
+      <div class="lg:col-span-4 md:col-span-2 col-span-1">
+        <label class="control-label block">位置微調</label>
+        <div class="gap-2 flex">
+          <button id="resetPosition" class="position-btn"><i class="fa fa-circle"></i></button>
+          <button id="moveUp" class="position-btn"><i class="fa fa-arrow-up"></i></button>
+          <button id="moveDown" class="position-btn"><i class="fa fa-arrow-down"></i></button>
+          <button id="moveLeft" class="position-btn"><i class="fa fa-arrow-left"></i></button>
+          <button id="moveRight" class="position-btn"><i class="fa fa-arrow-right"></i></button>
         </div>
       </div>
     </div>
-  </main>
+  </div>
+</main>
 
-  <!-- 已删除页脚版权文字 -->
+<script>
+const previewCanvas = document.getElementById('previewCanvas');
+const exportCanvas = document.getElementById('exportCanvas');
+const previewWrap = document.getElementById('previewWrap');
+const previewCtx = previewCanvas.getContext('2d');
+const exportCtx = exportCanvas.getContext('2d');
+const emptyHint = document.getElementById('emptyPreviewHint');
+const downloadBtn = document.getElementById('downloadBtn');
+const dialogueText = document.getElementById('dialogueText');
+const textColor = document.getElementById('textColor');
+const boxOpacity = document.getElementById('boxOpacity');
+const textSizeSlider = document.getElementById('textSizeSlider');
+const bottomMarginSlider = document.getElementById('bottomMarginSlider');
+const imageUpload = document.getElementById('imageUpload');
+const resetPosition = document.getElementById('resetPosition');
+const moveUp = document.getElementById('moveUp');
+const moveDown = document.getElementById('moveDown');
+const moveLeft = document.getElementById('moveLeft');
+const moveRight = document.getElementById('moveRight');
 
-  <script>
-    const previewCanvas = document.getElementById('previewCanvas');
-    const exportCanvas = document.getElementById('exportCanvas');
-    const previewContainer = document.getElementById('previewContainer');
-    const previewCtx = previewCanvas.getContext('2d');
-    const exportCtx = exportCanvas.getContext('2d');
-    const emptyHint = document.getElementById('emptyPreviewHint');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const dialogueText = document.getElementById('dialogueText');
-    const textColor = document.getElementById('textColor');
-    const boxOpacity = document.getElementById('boxOpacity');
-    const textSizeSlider = document.getElementById('textSizeSlider');
-    const bottomMarginSlider = document.getElementById('bottomMarginSlider');
-    const imageUpload = document.getElementById('imageUpload');
-    const resetPosition = document.getElementById('resetPosition');
-    const moveUp = document.getElementById('moveUp');
-    const moveDown = document.getElementById('moveDown');
-    const moveLeft = document.getElementById('moveLeft');
-    const moveRight = document.getElementById('moveRight');
+// 固定绘图基准（电脑标准，全设备通用）
+const BASE = {
+  BASE_FONT:28, BASE_PAD:45, BASE_LINE:1.8, BASE_LETTER:4, MIN_FONT:18, BOX_RATE:0.9, STEP:10
+}
 
-    // 全局配置 - 电脑端恢复之前的大尺寸参数
-    const DESKTOP = {
-      MOVE_STEP: 10,
-      BASE_FONT: 24,     // 电脑端字体更大
-      BASE_PAD: 40,      // 电脑端内边距更大
-      BASE_LINE: 1.8,
-      BASE_LETTER: 4,
-      MIN_FONT: 16,
-      MAX_WIDTH: 800,    // 电脑端最大宽度800px
-      BOX_RATE: 0.9      // 电脑端对话框宽度占比90%
-    };
-    const MOBILE = {
-      MOVE_STEP: 6,
-      BASE_FONT: 18,     // 手机端字体适中
-      BASE_PAD: 26,      // 手机端内边距适中
-      BASE_LINE: 1.6,
-      BASE_LETTER: 3,
-      MIN_FONT: 12,
-      MAX_HEIGHT: 0.7,   // 手机端最大高度70vh
-      BOX_RATE: 0.85     // 手机端对话框宽度占比85%
-    };
+let originalImg = null;
+let dpr = window.devicePixelRatio||1;
+let boxX=0,boxY=0;
+let currentStyle='game1';
+let currentFont='sans';
 
-    // 全局变量
-    let originalImg = null;
-    let dpr = window.devicePixelRatio || 1;
-    let boxX = 0, boxY = 0;
-    let currentStyle = 'game1';
-    let currentFont = 'sans'; // 默认字体
-    let isMobile = window.innerWidth < 768;
-    let cfg = isMobile ? MOBILE : DESKTOP;
+// 样式配置
+const styleGroups={
+classic:[{key:'game1',name:'黑白'},{key:'style1',name:'純紫'},{key:'style2',name:'藍'},{key:'style3',name:'紫'},{key:'style12',name:'粉'},{key:'style14',name:'白雲天空'},{key:'style15',name:'純粉'},{key:'mora1',name:'莫蘭迪咖'},{key:'mora2',name:'莫蘭迪灰'},{key:'maca1',name:'淺粉'},{key:'maca2',name:'薄荷'}],
+cyber:[{key:'castle1',name:'白電光'}],
+new:[{key:'new1',name:'三層白'},{key:'new3',name:'浪漫'},{key:'new7',name:'信紙咖'},{key:'new8',name:'甜蜜'},{key:'new11',name:'漫畫尖角'},{key:'new12',name:'藍波雲'},{key:'sum1',name:'夏日清涼'},{key:'pea1',name:'水蜜桃'},{key:'school1',name:'信紙藍'}],
+transparent:[{key:'ani1',name:'白透'},{key:'ani2',name:'磨砂'}]
+}
+const styleMap={
+game1:{bg:'#111',border:'#EEE',dark:1}, style1:{bg:'#FFDFFF',border:'#A855F7'}, style2:{bg:'#FFF',border:'#0EA5E9'},
+style3:{bg:'#FFF',border:'#9333EA'}, style12:{bg:'#FFF',border:'#FF69B4'}, style14:{bg:'#87CEFA',border:'#FFF'},
+style15:{bg:'#FFB6C1',border:'#FF1493'}, maca1:{bg:'#FFEEF4',border:'#F8BBD0'}, maca2:{bg:'#E8F8F5',border:'#80CBC4'},
+mora1:{bg:'#EAE2E2',border:'#BFA8A8'}, mora2:{bg:'#E2E8F0',border:'#94A3B8'}, ani1:{bg:'rgba(255,255,255,0.88)',border:'#D1D5DB'},
+ani2:{bg:'rgba(255,255,250,0.92)',border:'rgba(200,200,200,0.7)'}, new1:{bg:'#121212',border:'#E5E5E5',dark:1},
+new3:{bg:'#FFEEF6',border:'#FFB7C5'}, new7:{bg:'#F5EFE2',border:'#A89078'}, new8:{bg:'#FFEEF2',border:'#F472B6'},
+new11:{bg:'#FFF',border:'#64748B'}, new12:{bg:'#E0F7FA',border:'#4DD0E1'}, sum1:{bg:'#E6FFFA',border:'#22D3EE'},
+pea1:{bg:'#FFECEC',border:'#FDA4AF'}, school1:{bg:'#EFF6FF',border:'#60A5FA'}, castle1:{bg:'#1E293B',border:'#CBD5E1',dark:1}
+}
 
-    // 对话框样式
-    const styleGroups = {
-      classic: [{key:'game1',name:'黑白'},{key:'style1',name:'純紫'},{key:'style2',name:'藍'},{key:'style3',name:'紫'},{key:'style12',name:'粉'},{key:'style14',name:'白雲天空'},{key:'style15',name:'純粉'},{key:'mora1',name:'莫蘭迪咖'},{key:'mora2',name:'莫蘭迪灰'},{key:'maca1',name:'淺粉'},{key:'maca2',name:'薄荷'}],
-      cyber: [{key:'castle1',name:'白電光'}],
-      new: [{key:'new1',name:'三層白'},{key:'new3',name:'浪漫'},{key:'new7',name:'信紙咖'},{key:'new8',name:'甜蜜'},{key:'new11',name:'漫畫尖角'},{key:'new12',name:'藍波雲'},{key:'sum1',name:'夏日清涼'},{key:'pea1',name:'水蜜桃'},{key:'school1',name:'信紙藍'}],
-      transparent: [{key:'ani1',name:'白透'},{key:'ani2',name:'磨砂'}]
-    };
-    const styleMap = {
-      game1:{bg:'#111',border:'#EEE',dark:1}, style1:{bg:'#FFDFFF',border:'#A855F7'}, style2:{bg:'#FFF',border:'#0EA5E9'},
-      style3:{bg:'#FFF',border:'#9333EA'}, style12:{bg:'#FFF',border:'#FF69B4'}, style14:{bg:'#87CEFA',border:'#FFF'},
-      style15:{bg:'#FFB6C1',border:'#FF1493'}, maca1:{bg:'#FFEEF4',border:'#F8BBD0'}, maca2:{bg:'#E8F8F5',border:'#80CBC4'},
-      mora1:{bg:'#EAE2E2',border:'#BFA8A8'}, mora2:{bg:'#E2E8F0',border:'#94A3B8'}, ani1:{bg:'rgba(255,255,255,0.88)',border:'#D1D5DB'},
-      ani2:{bg:'rgba(255,255,250,0.92)',border:'rgba(200,200,200,0.7)'}, new1:{bg:'#121212',border:'#E5E5E5',dark:1},
-      new3:{bg:'#FFEEF6',border:'#FFB7C5'}, new7:{bg:'#F5EFE2',border:'#A89078'}, new8:{bg:'#FFEEF2',border:'#F472B6'},
-      new11:{bg:'#FFF',border:'#64748B'}, new12:{bg:'#E0F7FA',border:'#4DD0E1'}, sum1:{bg:'#E6FFFA',border:'#22D3EE'},
-      pea1:{bg:'#FFECEC',border:'#FDA4AF'}, school1:{bg:'#EFF6FF',border:'#60A5FA'}, castle1:{bg:'#1E293B',border:'#CBD5E1',dark:1}
-    };
+window.onload=()=>{
+previewCtx.imageSmoothingEnabled = false;
+exportCtx.imageSmoothingEnabled = false;
+buildStyleBtn(); bindFontBtn(); bindAllEvent(); loadDefaultPic();
+}
+// 窗口缩放自动重绘
+window.addEventListener('resize',()=>{if(originalImg){calcPreviewScale();drawAll()}})
 
-    window.onload = () => {
-      previewCtx.imageSmoothingEnabled = false;
-      exportCtx.imageSmoothingEnabled = false;
-      buildStyles();
-      bindFontEvents();
-      bindEvents();
-      loadDefaultImg();
-      // 初始适配
-      handleResize();
-    };
+// 加载默认图片
+function loadDefaultPic(){
+const img=new Image();img.crossOrigin='';img.src='https://picsum.photos/1200/800';
+img.onload=()=>{originalImg=img;boxX=boxY=0;setExportSize();calcPreviewScale();drawAll();downloadBtn.disabled=false;emptyHint.style.display='none';}
+}
+// 导出画布 = 原始图片尺寸
+function setExportSize(){
+exportCanvas.width=originalImg.width*dpr;
+exportCanvas.height=originalImg.height*dpr;
+exportCtx.setTransform(1,0,0,1,0,0);exportCtx.scale(dpr,dpr);
+}
+let previewScale=1;
+// 修复预览区缩放：放大显示，不压缩过小
+function calcPreviewScale(){
+const wrap=previewWrap.getBoundingClientRect();
+const iw=originalImg.width,ih=originalImg.height;
+// 核心修复：预览区放大，最小缩放0.5，避免太小看不见
+const sX=wrap.width/iw;
+const sY=wrap.height/ih;
+previewScale=Math.min(sX,sY,1);
+previewScale = Math.max(previewScale, 0.5);
+// 设置预览画布
+previewCanvas.width=iw*previewScale*dpr;
+previewCanvas.height=ih*previewScale*dpr;
+previewCanvas.style.width=iw*previewScale+'px';
+previewCanvas.style.height=ih*previewScale+'px';
+previewCtx.setTransform(1,0,0,1,0,0);previewCtx.scale(dpr,dpr);
+}
+// 核心绘图：修复文字/对话框消失，统一绘制逻辑
+function drawCore(ctx,cw,ch){
+const txt=dialogueText.value.trim();
+const col=textColor.value;
+const op=+boxOpacity.value;
+const mar=(bottomMarginSlider.value/100)*ch;
+const szRate=textSizeSlider.value/100;
+const sty=styleMap[currentStyle];
+const s=cw/1000;
 
-    // 窗口 resize 适配 - 核心修复
-    window.addEventListener('resize', handleResize);
-    
-    function handleResize() {
-      isMobile = window.innerWidth < 768;
-      cfg = isMobile ? MOBILE : DESKTOP;
-      updateCanvas();
-      redraw();
-    }
+// 放大基础字体，避免看不见
+const fSize=Math.max(BASE.MIN_FONT,BASE.BASE_FONT*s*szRate);
+const pad=Math.max(25,BASE.BASE_PAD*s);
+const lineH=BASE.BASE_LINE*fSize;
+const letW=BASE.BASE_LETTER*s;
+const boxW=cw*BASE.BOX_RATE;
+const maxW=boxW-pad*2;
 
-    // 加载默认图片
-    function loadDefaultImg() {
-      const img = new Image();
-      img.crossOrigin = '';
-      img.src = 'https://picsum.photos/1200/800';
-      img.onload = () => {
-        originalImg = img;
-        resetAll();
-        updateCanvas();
-        redraw();
-        downloadBtn.disabled = false;
-        emptyHint.style.display = 'none';
-      };
-    }
+ctx.font=fSize+'px '+getFont(currentFont);
+ctx.textBaseline='top';
 
-    function resetAll() { boxX = boxY = 0; }
+// 文字换行
+let lines=[],cur='',curW=0;
+[...txt].forEach(c=>{
+const w=ctx.measureText(c).width;
+const add=curW?w+letW:w;
+if(curW+add<=maxW){cur+=c;curW+=add;}else{lines.push(cur);cur=c;curW=w;}
+})
+if(cur)lines.push(cur);
 
-    // 构建对话框样式
-    function buildStyles() {
-      Object.keys(styleGroups).forEach(g => {
-        const wrap = document.querySelector(`[data-group="${g}"]`);
-        styleGroups[g].forEach(item => {
-          const btn = document.createElement('div');
-          btn.className = 'style-card';
-          btn.dataset.style = item.key;
-          btn.innerText = item.name;
-          btn.onclick = () => { currentStyle = item.key; highlight(); updateColor(); redraw(); };
-          wrap.appendChild(btn);
-        });
-      });
-      highlight();
-      updateColor();
-    }
+// 对话框尺寸
+const totalH=lines.length*lineH;
+const boxH=Math.max(100,totalH+pad*2);
+const bl=(cw-boxW)/2+boxX;
+let bt=ch-boxH-mar+boxY;
+bt=Math.max(10,Math.min(bt,ch-boxH-10));
 
-    // 高亮选中样式
-    function highlight() {
-      document.querySelectorAll('.style-card').forEach(c => c.classList.toggle('active', c.dataset.style === currentStyle));
-    }
+// 绘制对话框
+ctx.save();
+ctx.globalAlpha=op;
+ctx.fillStyle=sty.bg;ctx.strokeStyle=sty.border;ctx.lineWidth=Math.max(2,6*s);
+if(currentStyle==='style14'){
+const g=ctx.createLinearGradient(bl,bt,bl,bt+boxH);g.addColorStop(0,'#87CEFA');g.addColorStop(1,'#E0F7FF');
+ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(bl,bt,boxW,boxH,12*s);ctx.fill();ctx.stroke();
+}else if(currentStyle==='ani2'){
+ctx.beginPath();ctx.roundRect(bl,bt,boxW,boxH,16*s);ctx.fill();ctx.stroke();
+}else{ctx.fillRect(bl,bt,boxW,boxH);ctx.strokeRect(bl,bt,boxW,boxH);}
 
-    // 绑定字体切换事件
-    function bindFontEvents() {
-      document.querySelectorAll('.font-card').forEach(card => {
-        card.onclick = () => {
-          currentFont = card.dataset.font;
-          document.querySelectorAll('.font-card').forEach(c => c.classList.remove('active'));
-          card.classList.add('active');
-          redraw();
-        };
-      });
-    }
+// 绘制文字（修复消失问题）
+ctx.globalAlpha=1;ctx.fillStyle=col;
+const ty=bt+pad+(boxH-pad*2-totalH)/2;
+lines.forEach((l,i)=>{
+let x=bl+pad;[...l].forEach(c=>{ctx.fillText(c,x,ty+i*lineH);x+=ctx.measureText(c).width+letW;})
+})
+ctx.restore();
+}
+// 统一绘制预览+导出
+function drawAll(){
+if(!originalImg)return;
+const iw=originalImg.width,ih=originalImg.height;
+// 导出图
+exportCtx.clearRect(0,0,iw,ih);
+exportCtx.drawImage(originalImg,0,0,iw,ih);
+drawCore(exportCtx,iw,ih);
+// 预览图
+previewCtx.clearRect(0,0,previewCanvas.width/dpr,previewCanvas.height/dpr);
+previewCtx.drawImage(originalImg,0,0,iw,ih);
+drawCore(previewCtx,previewCanvas.width/dpr,previewCanvas.height/dpr);
+}
 
-    // 核心修复：电脑/手机差异化预览逻辑
-    function updateCanvas() {
-      if (!originalImg) return;
-      const imgW = originalImg.width;
-      const imgH = originalImg.height;
-      
-      // 1. 输出画布：保持原始高清尺寸（画质无损）
-      exportCanvas.width = imgW * dpr;
-      exportCanvas.height = imgH * dpr;
-      exportCtx.setTransform(1,0,0,1,0,0); 
-      exportCtx.scale(dpr,dpr);
-
-      // 2. 预览画布：差异化适配
-      const container = previewContainer.getBoundingClientRect();
-      const containerW = container.width;
-      const containerH = container.height;
-      
-      let previewScale = 1;
-      
-      if (isMobile) {
-        // 手机端：严格适配容器，完整显示不溢出
-        const scaleX = containerW / imgW;
-        const scaleY = containerH / imgH;
-        previewScale = Math.min(scaleX, scaleY, 1);
-      } else {
-        // 电脑端：恢复之前的大尺寸，最大宽度800px，不限制高度
-        const maxWidth = DESKTOP.MAX_WIDTH;
-        previewScale = Math.min(maxWidth / imgW, 1);
-      }
-      
-      // 设置预览画布尺寸
-      previewCanvas.width = imgW * previewScale * dpr;
-      previewCanvas.height = imgH * previewScale * dpr;
-      previewCanvas.style.width = `${imgW * previewScale}px`;
-      previewCanvas.style.height = `${imgH * previewScale}px`;
-      previewCtx.setTransform(1,0,0,1,0,0); 
-      previewCtx.scale(dpr,dpr);
-    }
-
-    // 绘制画布 - 优化文字和对话框尺寸计算
-    function redraw() {
-      if (!originalImg) return;
-      const ctxs = [previewCtx, exportCtx];
-      ctxs.forEach((ctx, i) => {
-        const isPreview = i === 0;
-        const cw = isPreview ? previewCanvas.width/dpr : exportCanvas.width/dpr;
-        const ch = isPreview ? previewCanvas.height/dpr : exportCanvas.height/dpr;
-        
-        ctx.clearRect(0,0,cw,ch);
-        ctx.drawImage(originalImg, 0,0,cw,ch);
-
-        // 基础参数
-        const text = dialogueText.value.trim();
-        const color = textColor.value;
-        const opacity = +boxOpacity.value;
-        const margin = (bottomMarginSlider.value/100)*ch;
-        const sizeRate = textSizeSlider.value/100;
-        const style = styleMap[currentStyle];
-        const boxRate = cfg.BOX_RATE;
-        const s = cw/1000;
-
-        // 字体+尺寸配置 - 电脑端更大
-        const fontSize = Math.max(cfg.MIN_FONT, cfg.BASE_FONT * s * sizeRate);
-        const pad = Math.max(isMobile?12:20, cfg.BASE_PAD * s);
-        const lineH = cfg.BASE_LINE * fontSize;
-        const letterW = cfg.BASE_LETTER * s;
-        const boxW = cw * boxRate;
-        const maxTextW = boxW - pad*2;
-
-        // 应用选中的字体
-        ctx.font = `${fontSize}px ${getFontFamily(currentFont)}`;
-        ctx.textBaseline = 'top';
-
-        // 文字换行
-        const lines = [];
-        let currLine = '', currW = 0;
-        [...text].forEach(c => {
-          const cw = ctx.measureText(c).width;
-          const add = currW ? cw+letterW : cw;
-          if (currW+add <= maxTextW) { currLine+=c; currW+=add; }
-          else { lines.push(currLine); currLine=c; currW=cw; }
-        });
-        if (currLine) lines.push(currLine);
-
-        // 对话框位置 - 确保不超出边界
-        const totalH = lines.length * lineH;
-        const boxH = Math.max(isMobile?60:80, totalH + pad*2);
-        const boxLeft = (cw - boxW)/2 + boxX;
-        let boxTop = ch - boxH - margin + boxY;
-        
-        // 边界检查：确保对话框完全在画布内
-        boxTop = Math.max(10, Math.min(boxTop, ch - boxH - 10));
-        boxX = Math.max(-boxW/2, Math.min(boxX, boxW/2));
-        boxY = Math.max(-boxH/2, Math.min(boxY, boxH/2));
-
-        // 绘制对话框
-        ctx.save();
-        ctx.globalAlpha = opacity;
-        ctx.fillStyle = style.bg; ctx.strokeStyle = style.border; 
-        ctx.lineWidth = Math.max(isMobile?1.5:2, (isMobile?4:6)*s);
-        
-        if (currentStyle === 'style14') {
-          const g = ctx.createLinearGradient(boxLeft,boxTop,boxLeft,boxTop+boxH);
-          g.addColorStop(0,'#87CEFA'); g.addColorStop(1,'#E0F7FF');
-          ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(boxLeft,boxTop,boxW,boxH,(isMobile?8:12)*s); ctx.fill(); ctx.stroke();
-        } else if (currentStyle === 'ani2') {
-          ctx.beginPath(); ctx.roundRect(boxLeft,boxTop,boxW,boxH,(isMobile?12:16)*s); ctx.fill(); ctx.stroke();
-        } else {
-          ctx.fillRect(boxLeft,boxTop,boxW,boxH); ctx.strokeRect(boxLeft,boxTop,boxW,boxH);
-        }
-
-        // 绘制文字 - 确保垂直居中
-        ctx.globalAlpha = 1; ctx.fillStyle = color;
-        const textY = boxTop + pad + (boxH - pad*2 - totalH)/2;
-        lines.forEach((line, i) => {
-          let x = boxLeft + pad;
-          [...line].forEach(c => { ctx.fillText(c, x, textY + i*lineH); x += ctx.measureText(c).width + letterW; });
-        });
-        ctx.restore();
-      });
-    }
-
-    // 获取字体族
-    function getFontFamily(font) {
-      const map = {
-        sans: '"Noto Sans SC", sans-serif',
-        pixel: '"Fusion Pixel", monospace',
-        msz: '"Ma Shan Zheng", cursive',
-        kuaile: '"ZCOOL KuaiLe", sans-serif',
-        huangyou: '"ZCOOL QingKe HuangYou", sans-serif'
-      };
-      return map[font] || map.sans;
-    }
-
-    // 自动文字颜色
-    function updateColor() {
-      textColor.value = styleMap[currentStyle].dark ? '#fff' : '#000';
-    }
-
-    // 绑定所有事件
-    function bindEvents() {
-      // 上传图片
-      imageUpload.onchange = (e) => {
-        const f = e.target.files[0]; if(!f) return;
-        const r = new FileReader();
-        r.onload = (ev) => {
-          originalImg = new Image();
-          originalImg.onload = () => { resetAll(); updateCanvas(); redraw(); emptyHint.style.display='none'; downloadBtn.disabled=false; };
-          originalImg.src = ev.target.result;
-        };
-        r.readAsDataURL(f);
-      };
-
-      // 位置调节
-      resetPosition.onclick = () => { boxX=0; boxY=0; redraw(); };
-      moveUp.onclick = () => { boxY += cfg.MOVE_STEP; redraw(); };
-      moveDown.onclick = () => { boxY -= cfg.MOVE_STEP; redraw(); };
-      moveLeft.onclick = () => { boxX -= cfg.MOVE_STEP; redraw(); };
-      moveRight.onclick = () => { boxX += cfg.MOVE_STEP; redraw(); };
-
-      // 下载
-      downloadBtn.onclick = () => {
-        const a = document.createElement('a');
-        a.download = `dialog_${Date.now()}.png`;
-        a.href = exportCanvas.toDataURL('image/png');
-        a.click();
-      };
-
-      // 实时刷新
-      [dialogueText, textColor, boxOpacity, textSizeSlider, bottomMarginSlider].forEach(el => {
-        el.oninput = redraw;
-      });
-    }
-  </script>
+// 构建样式按钮
+function buildStyleBtn(){
+Object.keys(styleGroups).forEach(g=>{
+const wrap=document.querySelector(`[data-group="${g}"]`);
+styleGroups[g].forEach(it=>{
+const d=document.createElement('div');d.className='style-card';d.dataset.style=it.key;d.innerText=it.name;
+d.onclick=()=>{currentStyle=d.dataset.style;highLightStyle();autoFontColor();drawAll();};wrap.append(d);
+})
+})
+highLightStyle();autoFontColor();
+}
+function highLightStyle(){document.querySelectorAll('.style-card').forEach(d=>d.classList.toggle('active',d.dataset.style===currentStyle))}
+// 绑定字体（仅保留2个）
+function bindFontBtn(){
+document.querySelectorAll('.font-card').forEach(d=>{
+d.onclick=()=>{currentFont=d.dataset.font;document.querySelectorAll('.font-card').forEach(x=>x.classList.remove('active'));d.classList.add('active');drawAll();}
+})
+}
+// 字体映射（仅保留2个）
+function getFont(k){
+const map={
+  sans:'"Noto Sans SC",sans-serif',
+  pixel:'"Fusion Pixel",monospace'
+}
+return map[k]||map.sans;
+}
+function autoFontColor(){textColor.value=styleMap[currentStyle].dark?'#fff':'#000';}
+// 绑定所有事件
+function bindAllEvent(){
+imageUpload.onchange=e=>{
+const f=e.target.files[0];if(!f)return;
+const fr=new FileReader();fr.onload=ev=>{
+const img=new Image();img.onload=()=>{originalImg=img;boxX=boxY=0;setExportSize();calcPreviewScale();drawAll();emptyHint.style.display='none';downloadBtn.disabled=false;};img.src=ev.target.result;
+};fr.readAsDataURL(f);
+}
+resetPosition.onclick=()=>{boxX=boxY=0;drawAll();}
+moveUp.onclick=()=>{boxY+=BASE.STEP;drawAll();}
+moveDown.onclick=()=>{boxY-=BASE.STEP;drawAll();}
+moveLeft.onclick=()=>{boxX-=BASE.STEP;drawAll();}
+moveRight.onclick=()=>{boxX+=BASE.STEP;drawAll();}
+downloadBtn.onclick=()=>{
+const a=document.createElement('a');a.download=`dialog_${Date.now()}.png`;a.href=exportCanvas.toDataURL('image/png');a.click();
+}
+[dialogueText,textColor,boxOpacity,textSizeSlider,bottomMarginSlider].forEach(el=>el.oninput=drawAll)
+}
+</script>
 </body>
 </html>
