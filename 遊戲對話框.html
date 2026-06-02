@@ -14,28 +14,29 @@
   <style type="text/tailwindcss">
     @layer utilities {
       .pixel-border { image-rendering: pixelated; image-rendering: crisp-edges; }
-      .btn-unified { @apply px-8 py-2.5 rounded-full border border-primary text-primary bg-white hover:bg-primary/5 transition-all duration-300 disabled:border-gray-300 disabled:text-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed; }
+      .btn-unified { @apply px-6 py-2.5 rounded-full border border-primary text-primary bg-white hover:bg-primary/5 transition-all duration-300 disabled:border-gray-300 disabled:text-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed; }
       .btn-unified.active { @apply bg-primary text-white; }
       .control-label { @apply text-sm text-neutral/80 font-medium mb-1; }
       .opacity-preview { @apply w-8 h-8 rounded-sm ml-2 flex items-center justify-center border border-gray-200; image-rendering: pixelated; }
-      .style-card { @apply border-2 rounded-md p-2 text-center cursor-pointer transition-all bg-white text-xs hover:border-primary; }
+      .style-card { @apply border-2 rounded-md p-1.5 text-center cursor-pointer transition-all bg-white text-xs hover:border-primary; }
       .style-card.active { @apply border-primary bg-primary/10; }
       .style-group-title { @apply text-xs font-semibold text-neutral/70 mt-3 mb-2 border-l-4 border-primary pl-2; }
       .no-resize { resize: none; }
       textarea::-webkit-scrollbar { display: none; }
       textarea { scrollbar-width: none; }
       #previewCanvas { max-width: 800px; width: 100%; }
+      @media(max-width:767px){#previewCanvas{max-height:60vh;}}
       #exportCanvas { display: none; }
-      .position-btn { @apply flex-1 p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center text-base; }
+      .position-btn { @apply flex-1 p-2 md:p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center text-sm md:text-base; }
       .position-btn:hover { @apply border-primary bg-primary/5; }
     }
   </style>
 </head>
 <body class="bg-secondary min-h-screen flex flex-col overflow-x-hidden font-sans">
-  <main class="flex-1 flex flex-col p-4 md:p-6 max-w-5xl mx-auto w-full">
-    <div class="w-full bg-white rounded-lg p-4 md:p-6 shadow-sm mb-4 overflow-hidden flex justify-center relative">
-      <div id="emptyPreviewHint" class="text-center py-12 text-neutral/60">
-        <i class="fa fa-image text-4xl mb-3 text-neutral/30"></i><br>
+  <main class="flex-1 flex flex-col p-3 md:p-6 max-w-5xl mx-auto w-full">
+    <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4 overflow-hidden flex justify-center relative">
+      <div id="emptyPreviewHint" class="text-center py-8 text-neutral/60">
+        <i class="fa fa-image text-3xl mb-2 text-neutral/30"></i><br>
       </div>
       <canvas id="previewCanvas" class="pixel-border rounded"></canvas>
       <canvas id="exportCanvas" class="pixel-border"></canvas>
@@ -45,21 +46,21 @@
       <button id="downloadBtn" class="btn-unified font-medium" disabled>下載圖片</button>
     </div>
 
-    <div class="w-full bg-white rounded-lg p-4 md:p-6 shadow-sm mb-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label class="control-label block">對話文字</label>
-          <textarea id="dialogueText" rows="2" class="w-full p-2 border border-gray-200 rounded-md no-resize" placeholder="輸入對話內容...">風吹過街巷 溫柔藏日常 美好一直在身旁</textarea>
+          <textarea id="dialogueText" rows="2" class="w-full p-2 border border-gray-200 rounded-md no-resize text-sm" placeholder="輸入對話內容...">風吹過街巷 溫柔藏日常 美好一直在身旁</textarea>
         </div>
         <div>
           <label class="control-label block">上傳背景圖</label>
-          <input type="file" id="imageUpload" accept="image/*" class="w-full p-2 border border-gray-200 rounded-md">
+          <input type="file" id="imageUpload" accept="image/*" class="w-full p-2 border border-gray-200 rounded-md text-sm">
         </div>
       </div>
     </div>
 
-    <div class="w-full bg-white rounded-lg p-4 md:p-6 shadow-sm">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="md:col-span-2 lg:col-span-4">
           <div class="style-group-title">經典</div>
           <div data-group="classic" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3"></div>
@@ -73,14 +74,13 @@
 
         <div>
           <label class="control-label block">文字顏色</label>
-          <input type="color" id="textColor" value="#000000" class="w-full h-10 border-0 rounded-md cursor-pointer">
+          <input type="color" id="textColor" value="#000000" class="w-full h-9 border-0 rounded-md cursor-pointer">
         </div>
         <div>
           <label class="control-label block">對話框透明度</label>
           <div class="flex items-center gap-2">
             <input type="range" id="boxOpacity" min="0.1" max="1" step="0.1" value="1" class="w-full accent-primary">
             <span id="boxOpacityVal" class="text-xs text-neutral/60 w-10">100%</span>
-            <div id="opacityPreview" class="opacity-preview"></div>
           </div>
         </div>
         <div>
@@ -110,7 +110,7 @@
     </div>
   </main>
 
-  <footer class="py-3 px-6 text-center text-sm text-neutral/50 border-t border-gray-200 mt-6">
+  <footer class="py-2 px-4 text-center text-xs text-neutral/50 border-t border-gray-200 mt-4">
     對話框生成器 © 2026
   </footer>
 
@@ -134,18 +134,17 @@
     const moveRight = document.getElementById('moveRight');
 
     const PREVIEW_MAX_WIDTH = 800;
-    const MOVE_STEP = 10;
-    const BASE_FONT = 24;
-    const BASE_PAD = 40;
-    const BASE_LINE = 1.8;
-    const BASE_LETTER = 4;
-    const MIN_FONT = 16;
+    // 電腦原始參數
+    const DESKTOP = {MOVE_STEP:10,BASE_FONT:24,BASE_PAD:40,BASE_LINE:1.8,BASE_LETTER:4,MIN_FONT:16};
+    // 手機縮小參數
+    const MOBILE = {MOVE_STEP:6,BASE_FONT:18,BASE_PAD:26,BASE_LINE:1.6,BASE_LETTER:3,MIN_FONT:12};
 
     let originalImg = null;
     let dpr = window.devicePixelRatio || 1;
     let boxX = 0, boxY = 0;
-
     let currentStyle = 'game1';
+    let isMobile = window.innerWidth <768;
+    let cfg = isMobile ? MOBILE : DESKTOP;
 
     const styleGroups = {
       classic: [{key:'game1',name:'黑白'},{key:'style1',name:'純紫'},{key:'style2',name:'藍'},{key:'style3',name:'紫'},{key:'style12',name:'粉'},{key:'style14',name:'白雲天空'},{key:'style15',name:'純粉'},{key:'mora1',name:'莫蘭迪咖'},{key:'mora2',name:'莫蘭迪灰'},{key:'maca1',name:'淺粉'},{key:'maca2',name:'薄荷'}],
@@ -171,6 +170,13 @@
       bindEvents();
       loadDefaultImg();
     };
+
+    // 視窗大小切換重新載入配置
+    window.addEventListener('resize',()=>{
+      isMobile = window.innerWidth<768;
+      cfg = isMobile?MOBILE:DESKTOP;
+      updateCanvas();redraw();
+    })
 
     function loadDefaultImg() {
       const img = new Image();
@@ -243,12 +249,14 @@
         const sizeRate = textSizeSlider.value/100;
         const style = styleMap[currentStyle];
 
+        // 電腦：原始比例；手機：小幅縮減對話框寬度
+        const boxRate = isMobile ? 0.85 : 0.9;
         const s = cw/1000;
-        const fontSize = Math.max(MIN_FONT, BASE_FONT * s * sizeRate);
-        const pad = Math.max(20, BASE_PAD * s);
-        const lineH = BASE_LINE * fontSize;
-        const letterW = BASE_LETTER * s;
-        const boxW = cw * 0.9;
+        const fontSize = Math.max(cfg.MIN_FONT, cfg.BASE_FONT * s * sizeRate);
+        const pad = Math.max(isMobile?12:20, cfg.BASE_PAD * s);
+        const lineH = cfg.BASE_LINE * fontSize;
+        const letterW = cfg.BASE_LETTER * s;
+        const boxW = cw * boxRate;
         const maxTextW = boxW - pad*2;
 
         ctx.font = `${fontSize}px Noto Sans SC`;
@@ -264,21 +272,21 @@
         if (currLine) lines.push(currLine);
 
         const totalH = lines.length * lineH;
-        const boxH = Math.max(80, totalH + pad*2);
+        const boxH = Math.max(isMobile?60:80, totalH + pad*2);
         const boxLeft = (cw - boxW)/2 + boxX;
         let boxTop = ch - boxH - margin + boxY;
-        if (boxTop < 20) boxTop = 20;
+        if (boxTop < (isMobile?10:20)) boxTop = isMobile?10:20;
 
         ctx.save();
         ctx.globalAlpha = opacity;
-        ctx.fillStyle = style.bg; ctx.strokeStyle = style.border; ctx.lineWidth = Math.max(2, 6*s);
+        ctx.fillStyle = style.bg; ctx.strokeStyle = style.border; ctx.lineWidth = Math.max(isMobile?1.5:2, (isMobile?4:6)*s);
         
         if (currentStyle === 'style14') {
           const g = ctx.createLinearGradient(boxLeft,boxTop,boxLeft,boxTop+boxH);
           g.addColorStop(0,'#87CEFA'); g.addColorStop(1,'#E0F7FF');
-          ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(boxLeft,boxTop,boxW,boxH,12*s); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(boxLeft,boxTop,boxW,boxH,(isMobile?8:12)*s); ctx.fill(); ctx.stroke();
         } else if (currentStyle === 'ani2') {
-          ctx.beginPath(); ctx.roundRect(boxLeft,boxTop,boxW,boxH,16*s); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.roundRect(boxLeft,boxTop,boxW,boxH,(isMobile?12:16)*s); ctx.fill(); ctx.stroke();
         } else if (currentStyle === 'new1') {
           ctx.fillRect(boxLeft,boxTop,boxW,boxH); ctx.strokeRect(boxLeft,boxTop,boxW,boxH);
         } else {
@@ -296,7 +304,7 @@
     }
 
     function bindEvents() {
-      // 上传图片
+      // 上傳圖片
       imageUpload.onchange = (e) => {
         const f = e.target.files[0]; if(!f) return;
         const r = new FileReader();
@@ -310,12 +318,12 @@
 
       // 位置控制
       resetPosition.onclick = () => { boxX=0; boxY=0; redraw(); };
-      moveUp.onclick = () => { boxY += MOVE_STEP; redraw(); };
-      moveDown.onclick = () => { boxY -= MOVE_STEP; redraw(); };
-      moveLeft.onclick = () => { boxX -= MOVE_STEP; redraw(); };
-      moveRight.onclick = () => { boxX += MOVE_STEP; redraw(); };
+      moveUp.onclick = () => { boxY += cfg.MOVE_STEP; redraw(); };
+      moveDown.onclick = () => { boxY -= cfg.MOVE_STEP; redraw(); };
+      moveLeft.onclick = () => { boxX -= cfg.MOVE_STEP; redraw(); };
+      moveRight.onclick = () => { boxX += cfg.MOVE_STEP; redraw(); };
 
-      // 下载
+      // 下載
       downloadBtn.onclick = () => {
         const a = document.createElement('a');
         a.download = `dialog_${Date.now()}.png`;
@@ -323,7 +331,7 @@
         a.click();
       };
 
-      // 实时更新
+      // 即時更新
       [dialogueText, textColor, boxOpacity, textSizeSlider, bottomMarginSlider].forEach(el => {
         el.oninput = redraw;
       });
