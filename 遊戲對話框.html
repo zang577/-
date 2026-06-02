@@ -6,7 +6,7 @@
   <title>對話框生成器</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
-  <!-- 引入所有可商用免费字体 + 缝合怪像素字体 -->
+  <!-- 可商用字体 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fusion+Pixel&family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
@@ -14,13 +14,12 @@
     tailwind.config = {
       theme: { 
         extend: { 
-          // 莫兰迪核心配色（低饱和度，温柔高级）
+          // 莫兰迪配色
           colors: { 
             primary: '#8A959E', 
             secondary: '#F8F9FA', 
             neutral: '#6B7280' 
           }, 
-          // 所有可商用字体配置
           fontFamily: { 
             sans: ['"Noto Sans SC"', 'system-ui', 'sans-serif'],
             pixel: ['"Fusion Pixel"', 'monospace'],
@@ -46,19 +45,36 @@
       .no-resize { resize: none; }
       textarea::-webkit-scrollbar { display: none; }
       textarea { scrollbar-width: none; }
-      /* 核心修复：手机/电脑预览框统一适配，完整显示不溢出 */
-      #previewCanvas { max-width: 800px; width: 100%; height: auto; object-fit: contain; }
+      /* 核心修复：电脑/手机差异化预览容器 */
+      #previewContainer {
+        @apply w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4 overflow-hidden flex justify-center items-center relative;
+      }
+      /* 手机端严格限制高度，电脑端不限制高度 */
+      @media (max-width: 767px) {
+        #previewContainer { max-height: 70vh; min-height: 200px; }
+      }
+      @media (min-width: 768px) {
+        #previewContainer { max-height: none; min-height: 400px; }
+      }
+      #previewCanvas {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain; /* 确保图片完整显示不溢出 */
+      }
+      @media (min-width: 768px) {
+        #previewCanvas { max-width: 800px; } /* 电脑端恢复最大宽度800px */
+      }
       #exportCanvas { display: none; }
       .position-btn { @apply flex-1 p-2 md:p-3 border border-gray-200 rounded-md hover:bg-primary/5 transition-colors duration-200 flex items-center justify-center text-sm md:text-base; }
     }
   </style>
 </head>
-<!-- 需求3：网页背景纯纯白 -->
+<!-- 网页背景纯白 -->
 <body class="bg-white min-h-screen flex flex-col overflow-x-hidden font-sans">
   <main class="flex-1 flex flex-col p-3 md:p-6 max-w-5xl mx-auto w-full">
-    <!-- 预览区域 -->
-    <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4 overflow-hidden flex justify-center items-center">
-      <div id="emptyPreviewHint" class="text-center py-8 text-neutral/60">
+    <!-- 预览区域：新增容器严格限制高度 -->
+    <div id="previewContainer">
+      <div id="emptyPreviewHint" class="text-center py-8 text-neutral/60 absolute">
         <i class="fa fa-image text-3xl mb-2 text-neutral/30"></i>
       </div>
       <canvas id="previewCanvas" class="pixel-border rounded"></canvas>
@@ -84,7 +100,7 @@
       </div>
     </div>
 
-    <!-- 字体选择模块（需求4+5：可商用字体+像素字体，按钮切换） -->
+    <!-- 字体选择 -->
     <div class="w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4">
       <label class="control-label block">文字字型</label>
       <div id="fontGroup" class="grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -148,11 +164,12 @@
     </div>
   </main>
 
-  <!-- 需求2：已删除页脚版权文字 -->
+  <!-- 已删除页脚版权文字 -->
 
   <script>
     const previewCanvas = document.getElementById('previewCanvas');
     const exportCanvas = document.getElementById('exportCanvas');
+    const previewContainer = document.getElementById('previewContainer');
     const previewCtx = previewCanvas.getContext('2d');
     const exportCtx = exportCanvas.getContext('2d');
     const emptyHint = document.getElementById('emptyPreviewHint');
@@ -169,10 +186,27 @@
     const moveLeft = document.getElementById('moveLeft');
     const moveRight = document.getElementById('moveRight');
 
-    // 全局配置
-    const PREVIEW_MAX_WIDTH = 800;
-    const DESKTOP = {MOVE_STEP:10,BASE_FONT:24,BASE_PAD:40,BASE_LINE:1.8,BASE_LETTER:4,MIN_FONT:16};
-    const MOBILE = {MOVE_STEP:6,BASE_FONT:18,BASE_PAD:26,BASE_LINE:1.6,BASE_LETTER:3,MIN_FONT:12};
+    // 全局配置 - 电脑端恢复之前的大尺寸参数
+    const DESKTOP = {
+      MOVE_STEP: 10,
+      BASE_FONT: 24,     // 电脑端字体更大
+      BASE_PAD: 40,      // 电脑端内边距更大
+      BASE_LINE: 1.8,
+      BASE_LETTER: 4,
+      MIN_FONT: 16,
+      MAX_WIDTH: 800,    // 电脑端最大宽度800px
+      BOX_RATE: 0.9      // 电脑端对话框宽度占比90%
+    };
+    const MOBILE = {
+      MOVE_STEP: 6,
+      BASE_FONT: 18,     // 手机端字体适中
+      BASE_PAD: 26,      // 手机端内边距适中
+      BASE_LINE: 1.6,
+      BASE_LETTER: 3,
+      MIN_FONT: 12,
+      MAX_HEIGHT: 0.7,   // 手机端最大高度70vh
+      BOX_RATE: 0.85     // 手机端对话框宽度占比85%
+    };
 
     // 全局变量
     let originalImg = null;
@@ -180,7 +214,7 @@
     let boxX = 0, boxY = 0;
     let currentStyle = 'game1';
     let currentFont = 'sans'; // 默认字体
-    let isMobile = window.innerWidth <768;
+    let isMobile = window.innerWidth < 768;
     let cfg = isMobile ? MOBILE : DESKTOP;
 
     // 对话框样式
@@ -205,17 +239,22 @@
       previewCtx.imageSmoothingEnabled = false;
       exportCtx.imageSmoothingEnabled = false;
       buildStyles();
-      bindFontEvents(); // 绑定字体切换
+      bindFontEvents();
       bindEvents();
       loadDefaultImg();
+      // 初始适配
+      handleResize();
     };
 
-    // 窗口 resize 适配
-    window.addEventListener('resize',()=>{
-      isMobile = window.innerWidth<768;
-      cfg = isMobile?MOBILE:DESKTOP;
-      updateCanvas();redraw();
-    })
+    // 窗口 resize 适配 - 核心修复
+    window.addEventListener('resize', handleResize);
+    
+    function handleResize() {
+      isMobile = window.innerWidth < 768;
+      cfg = isMobile ? MOBILE : DESKTOP;
+      updateCanvas();
+      redraw();
+    }
 
     // 加载默认图片
     function loadDefaultImg() {
@@ -268,32 +307,50 @@
       });
     }
 
-    // 核心修复：电脑/手机统一预览逻辑，完整显示不溢出，输出画质无损
+    // 核心修复：电脑/手机差异化预览逻辑
     function updateCanvas() {
       if (!originalImg) return;
       const imgW = originalImg.width;
       const imgH = originalImg.height;
-
-      // 输出画布：保持原始高清尺寸（画质无损）
+      
+      // 1. 输出画布：保持原始高清尺寸（画质无损）
       exportCanvas.width = imgW * dpr;
       exportCanvas.height = imgH * dpr;
-      exportCtx.setTransform(1,0,0,1,0,0); exportCtx.scale(dpr,dpr);
+      exportCtx.setTransform(1,0,0,1,0,0); 
+      exportCtx.scale(dpr,dpr);
 
-      // 预览画布：等比例缩放，适配屏幕，完整显示不溢出
-      const scale = Math.min(PREVIEW_MAX_WIDTH / imgW, 1);
-      previewCanvas.width = imgW * scale * dpr;
-      previewCanvas.height = imgH * scale * dpr;
-      previewCanvas.style.width = `${imgW * scale}px`;
-      previewCanvas.style.height = `${imgH * scale}px`;
-      previewCtx.setTransform(1,0,0,1,0,0); previewCtx.scale(dpr,dpr);
+      // 2. 预览画布：差异化适配
+      const container = previewContainer.getBoundingClientRect();
+      const containerW = container.width;
+      const containerH = container.height;
+      
+      let previewScale = 1;
+      
+      if (isMobile) {
+        // 手机端：严格适配容器，完整显示不溢出
+        const scaleX = containerW / imgW;
+        const scaleY = containerH / imgH;
+        previewScale = Math.min(scaleX, scaleY, 1);
+      } else {
+        // 电脑端：恢复之前的大尺寸，最大宽度800px，不限制高度
+        const maxWidth = DESKTOP.MAX_WIDTH;
+        previewScale = Math.min(maxWidth / imgW, 1);
+      }
+      
+      // 设置预览画布尺寸
+      previewCanvas.width = imgW * previewScale * dpr;
+      previewCanvas.height = imgH * previewScale * dpr;
+      previewCanvas.style.width = `${imgW * previewScale}px`;
+      previewCanvas.style.height = `${imgH * previewScale}px`;
+      previewCtx.setTransform(1,0,0,1,0,0); 
+      previewCtx.scale(dpr,dpr);
     }
 
-    // 绘制画布
+    // 绘制画布 - 优化文字和对话框尺寸计算
     function redraw() {
       if (!originalImg) return;
       const ctxs = [previewCtx, exportCtx];
       ctxs.forEach((ctx, i) => {
-        // 区分预览/输出尺寸
         const isPreview = i === 0;
         const cw = isPreview ? previewCanvas.width/dpr : exportCanvas.width/dpr;
         const ch = isPreview ? previewCanvas.height/dpr : exportCanvas.height/dpr;
@@ -308,10 +365,10 @@
         const margin = (bottomMarginSlider.value/100)*ch;
         const sizeRate = textSizeSlider.value/100;
         const style = styleMap[currentStyle];
-        const boxRate = 0.9;
+        const boxRate = cfg.BOX_RATE;
         const s = cw/1000;
 
-        // 字体+尺寸配置
+        // 字体+尺寸配置 - 电脑端更大
         const fontSize = Math.max(cfg.MIN_FONT, cfg.BASE_FONT * s * sizeRate);
         const pad = Math.max(isMobile?12:20, cfg.BASE_PAD * s);
         const lineH = cfg.BASE_LINE * fontSize;
@@ -334,17 +391,22 @@
         });
         if (currLine) lines.push(currLine);
 
-        // 对话框位置
+        // 对话框位置 - 确保不超出边界
         const totalH = lines.length * lineH;
         const boxH = Math.max(isMobile?60:80, totalH + pad*2);
         const boxLeft = (cw - boxW)/2 + boxX;
         let boxTop = ch - boxH - margin + boxY;
-        if (boxTop < (isMobile?10:20)) boxTop = isMobile?10:20;
+        
+        // 边界检查：确保对话框完全在画布内
+        boxTop = Math.max(10, Math.min(boxTop, ch - boxH - 10));
+        boxX = Math.max(-boxW/2, Math.min(boxX, boxW/2));
+        boxY = Math.max(-boxH/2, Math.min(boxY, boxH/2));
 
         // 绘制对话框
         ctx.save();
         ctx.globalAlpha = opacity;
-        ctx.fillStyle = style.bg; ctx.strokeStyle = style.border; ctx.lineWidth = Math.max(isMobile?1.5:2, (isMobile?4:6)*s);
+        ctx.fillStyle = style.bg; ctx.strokeStyle = style.border; 
+        ctx.lineWidth = Math.max(isMobile?1.5:2, (isMobile?4:6)*s);
         
         if (currentStyle === 'style14') {
           const g = ctx.createLinearGradient(boxLeft,boxTop,boxLeft,boxTop+boxH);
@@ -356,7 +418,7 @@
           ctx.fillRect(boxLeft,boxTop,boxW,boxH); ctx.strokeRect(boxLeft,boxTop,boxW,boxH);
         }
 
-        // 绘制文字
+        // 绘制文字 - 确保垂直居中
         ctx.globalAlpha = 1; ctx.fillStyle = color;
         const textY = boxTop + pad + (boxH - pad*2 - totalH)/2;
         lines.forEach((line, i) => {
