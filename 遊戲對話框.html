@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
-  <title>遊戲對話框</title>
+  <title>對話框產生器</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,10 +36,10 @@
       .no-resize { resize: none; }
       textarea::-webkit-scrollbar { display: none; }
       textarea { scrollbar-width: none; }
-      #previewWrap { @apply w-full bg-white rounded-lg p-3 md:p-8 shadow-sm mb-4 flex justify-center items-center relative overflow-hidden; }
-      @media (max-width:767px) { #previewWrap { min-height: 300px; max-height: 80vh; } }
-      @media (min-width:768px) { #previewWrap { min-height: 500px; } }
-      #previewCanvas { max-width:100%; max-height:100%; object-fit: contain; }
+      #previewWrap { @apply w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4 flex justify-center items-center relative overflow-hidden; }
+      @media(max-width:767px){#previewWrap{min-height:300px;max-height:80vh;}}
+      @media(min-width:768px){#previewWrap{min-height:500px;}}
+      #previewCanvas { max-width:100%; max-height:100%; }
       #exportCanvas { display:none; }
       .position-btn { @apply flex-1 p-2 md:p-3 border border-gray-200 rounded-md hover:bg-primary/5 transition-colors duration-200 flex items-center justify-center text-sm md:text-base; }
     }
@@ -155,7 +155,8 @@ const moveLeft = document.getElementById('moveLeft');
 const moveRight = document.getElementById('moveRight');
 
 const BASE = {
-  BASE_FONT:28, BASE_PAD:45, BASE_LINE:1.8, BASE_LETTER:4, MIN_FONT:18, BOX_RATE:0.9, STEP:10
+  BASE_FONT:28, BASE_PAD:45, BASE_LINE:1.8, BASE_LETTER:4, MIN_FONT:12, BOX_RATE:0.9, STEP:10,
+  FIX_BOX_H_RATIO:0.13
 }
 
 let originalImg = null;
@@ -185,7 +186,6 @@ window.onload=()=>{
 previewCtx.imageSmoothingEnabled = false;
 exportCtx.imageSmoothingEnabled = false;
 buildStyleBtn(); bindFontBtn(); bindAllEvent(); loadDefaultPic();
-// 初始化显示拉杆数值
 updateSliderValues();
 }
 window.addEventListener('resize',()=>{if(originalImg){calcPreviewScale();drawAll()}})
@@ -213,8 +213,9 @@ previewCanvas.style.width=iw*previewScale+'px';
 previewCanvas.style.height=ih*previewScale+'px';
 previewCtx.setTransform(1,0,0,1,0,0);previewCtx.scale(dpr,dpr);
 }
+
 function drawCore(ctx,cw,ch){
-const txt=dialogueText.value.trim();
+const txt=dialogueText.value.trim()||' ';
 const col=textColor.value;
 const op=+boxOpacity.value;
 const mar=(bottomMarginSlider.value/100)*ch;
@@ -222,28 +223,34 @@ const szRate=textSizeSlider.value/100;
 const sty=styleMap[currentStyle];
 const s=cw/1000;
 
-const fSize=Math.max(BASE.MIN_FONT,BASE.BASE_FONT*s*szRate);
-const pad=Math.max(25,BASE.BASE_PAD*s);
-const lineH=BASE.BASE_LINE*fSize;
-const letW=BASE.BASE_LETTER*s;
-const boxW=cw*BASE.BOX_RATE;
-const maxW=boxW-pad*2;
+const boxW = cw * BASE.BOX_RATE;
+const boxH = cw * BASE.FIX_BOX_H_RATIO; // 固定框高
+const pad = Math.max(25, BASE.BASE_PAD * s);
+const maxW = boxW - pad * 2;
+const maxInnerH = boxH - pad * 2;
 
-// 修复1：字体切换+垂直居中
+let fSize = Math.max(BASE.MIN_FONT, BASE.BASE_FONT * s * szRate);
+const letterW = BASE.BASE_LETTER * s;
+
 ctx.font=fSize+'px '+getFont(currentFont);
-ctx.textBaseline='middle'; // 关键修复：垂直居中基准线
-ctx.textAlign='left';
-
+ctx.textBaseline='top';
 let lines=[],cur='',curW=0;
 [...txt].forEach(c=>{
-const w=ctx.measureText(c).width;
-const add=curW?w+letW:w;
-if(curW+add<=maxW){cur+=c;curW+=add;}else{lines.push(cur);cur=c;curW=w;}
+  const w=ctx.measureText(c).width;
+  const add=curW?w+letterW:w;
+  if(curW+add<=maxW){cur+=c;curW+=add;}else{lines.push(cur);cur=c;curW=w;}
 })
 if(cur)lines.push(cur);
 
-const totalH=lines.length*lineH;
-const boxH=Math.max(100,totalH+pad*2);
+// 文字過多自動縮字、框不變
+let lineH = BASE.BASE_LINE * fSize;
+let totalTxtH = lines.length * lineH;
+if(totalTxtH > maxInnerH){
+  fSize = fSize * (maxInnerH / totalTxtH);
+  lineH = BASE.BASE_LINE * fSize;
+  ctx.font=fSize+'px '+getFont(currentFont);
+}
+
 const bl=(cw-boxW)/2+boxX;
 let bt=ch-boxH-mar+boxY;
 bt=Math.max(10,Math.min(bt,ch-boxH-10));
@@ -259,25 +266,20 @@ ctx.beginPath();ctx.roundRect(bl,bt,boxW,boxH,16*s);ctx.fill();ctx.stroke();
 }else{ctx.fillRect(bl,bt,boxW,boxH);ctx.strokeRect(bl,bt,boxW,boxH);}
 
 ctx.globalAlpha=1;ctx.fillStyle=col;
-// 修复1：精确垂直居中计算
-const ty=bt+pad+(boxH-pad*2)/2; // 对话框垂直中心
+const startY = bt + pad + (maxInnerH - lines.length*lineH)/2;
 lines.forEach((l,i)=>{
-let x=bl+pad;
-// 单行文本垂直居中
-const lineY=ty-(totalH/2)+(i*lineH)+(lineH/2);
-[...l].forEach(c=>{ctx.fillText(c,x,lineY);x+=ctx.measureText(c).width+letW;})
+  let x=bl+pad;
+  [...l].forEach(c=>{ctx.fillText(c,x,startY+i*lineH);x+=ctx.measureText(c).width+letterW;})
 })
 ctx.restore();
 }
 
-// 核心修复1：统一绘图，预览=下载100%一致
 function drawAll(){
 if(!originalImg)return;
 const iw=originalImg.width,ih=originalImg.height;
 exportCtx.clearRect(0,0,iw,ih);
 exportCtx.drawImage(originalImg,0,0,iw,ih);
 drawCore(exportCtx,iw,ih);
-// 预览直接复制导出的成品图，纯等比缩放，无任何差异
 previewCtx.clearRect(0,0,previewCanvas.width/dpr,previewCanvas.height/dpr);
 previewCtx.drawImage(exportCanvas, 0, 0, iw*dpr, ih*dpr, 0, 0, previewCanvas.width/dpr, previewCanvas.height/dpr);
 }
@@ -299,28 +301,22 @@ d.onclick=()=>{
   currentFont=d.dataset.font;
   document.querySelectorAll('.font-card').forEach(x=>x.classList.remove('active'));
   d.classList.add('active');
-  // 修复1：强制重绘确保字体切换生效
-  setTimeout(drawAll, 50);
+  setTimeout(drawAll,80);
 }
 })
 }
 function getFont(k){
-const map={
-  sans:'"Noto Sans SC",sans-serif',
-  pixel:'"Fusion Pixel",monospace'
-}
-return map[k]||map.sans;
+const map={sans:'"Noto Sans SC",sans-serif',pixel:'"Fusion Pixel",monospace'}
+return map[k];
 }
 function autoFontColor(){textColor.value=styleMap[currentStyle].dark?'#fff':'#000';}
 
-// 修复2：实时更新拉杆数值
 function updateSliderValues(){
-boxOpacityValue.textContent = Math.round(boxOpacity.value * 100) + '%';
-textSizeValue.textContent = textSizeSlider.value + '%';
-bottomMarginValue.textContent = bottomMarginSlider.value + '%';
+boxOpacityValue.textContent = Math.round(boxOpacity.value*100)+'%';
+textSizeValue.textContent = textSizeSlider.value+'%';
+bottomMarginValue.textContent = bottomMarginSlider.value+'%';
 }
 
-// 核心修复2：下载检视功能正常，兼容所有浏览器
 function bindAllEvent(){
 imageUpload.onchange=e=>{
 const f=e.target.files[0];if(!f)return;
@@ -329,13 +325,11 @@ const img=new Image();img.onload=()=>{originalImg=img;boxX=boxY=0;setExportSize(
 };fr.readAsDataURL(f);
 }
 resetPosition.onclick=()=>{boxX=boxY=0;drawAll();}
-// 修复3：上下按钮方向修正
-moveUp.onclick=()=>{boxY -= BASE.STEP; drawAll();} // 上移：减少Y坐标
-moveDown.onclick=()=>{boxY += BASE.STEP; drawAll();} // 下移：增加Y坐标
+moveUp.onclick=()=>{boxY -= BASE.STEP; drawAll();}
+moveDown.onclick=()=>{boxY += BASE.STEP; drawAll();}
 moveLeft.onclick=()=>{boxX -= BASE.STEP; drawAll();}
 moveRight.onclick=()=>{boxX += BASE.STEP; drawAll();}
 
-// 修复检视无效
 downloadBtn.onclick = () => {
   exportCanvas.toBlob((blob) => {
     const url = URL.createObjectURL(blob);
@@ -348,11 +342,9 @@ downloadBtn.onclick = () => {
   }, "image/png");
 };
 
-// 绑定拉杆实时更新事件
 boxOpacity.addEventListener('input', () => { updateSliderValues(); drawAll(); });
 textSizeSlider.addEventListener('input', () => { updateSliderValues(); drawAll(); });
 bottomMarginSlider.addEventListener('input', () => { updateSliderValues(); drawAll(); });
-
 [dialogueText,textColor].forEach(el=>el.oninput=drawAll)
 }
 </script>
