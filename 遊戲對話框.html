@@ -6,9 +6,10 @@
   <title>對話框產生器</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+  <!-- 仅保留有效字体：思源黑体（谷歌可用），删除无效的像素体链接 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fusion+Pixel&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       theme: {
@@ -16,7 +17,7 @@
           colors: { primary: '#8A959E', secondary: '#F8F9FA', neutral: '#6B7280' },
           fontFamily: {
             sans: ['"Noto Sans SC"', 'system-ui', 'sans-serif'],
-            pixel: ['"Fusion Pixel"', 'monospace']
+            pixel: ['"Pixel Font","Microsoft YaHei",monospace'] // 手机兼容像素字体
           }
         }
       }
@@ -39,7 +40,8 @@
       #previewWrap { @apply w-full bg-white rounded-lg p-3 md:p-6 shadow-sm mb-4 flex justify-center items-center relative overflow-hidden; }
       @media(max-width:767px){#previewWrap{min-height:300px;max-height:80vh;}}
       @media(min-width:768px){#previewWrap{min-height:500px;}}
-      #previewCanvas { max-width:100%; max-height:100%; }
+      /* 🔥 修复1：手机图片强制等比例，永久不变形 */
+      #previewCanvas { max-width:100%; max-height:100%; object-fit: contain !important; }
       #exportCanvas { display:none; }
       .position-btn { @apply flex-1 p-2 md:p-3 border border-gray-200 rounded-md hover:bg-primary/5 transition-colors duration-200 flex items-center justify-center text-sm md:text-base; }
     }
@@ -200,13 +202,11 @@ exportCanvas.height=originalImg.height*dpr;
 exportCtx.setTransform(1,0,0,1,0,0);exportCtx.scale(dpr,dpr);
 }
 let previewScale=1;
+// 🔥 修复2：严格等比例计算，手机永久不变形
 function calcPreviewScale(){
 const wrap=previewWrap.getBoundingClientRect();
 const iw=originalImg.width,ih=originalImg.height;
-const sX=wrap.width/iw;
-const sY=wrap.height/ih;
-previewScale=Math.min(sX,sY,1);
-previewScale = Math.max(previewScale, 0.5);
+previewScale=Math.min(wrap.width/iw,wrap.height/ih);
 previewCanvas.width=iw*previewScale*dpr;
 previewCanvas.height=ih*previewScale*dpr;
 previewCanvas.style.width=iw*previewScale+'px';
@@ -232,7 +232,7 @@ const maxInnerH = boxH - pad * 2;
 let fSize = Math.max(BASE.MIN_FONT, BASE.BASE_FONT * s * szRate);
 const letterW = BASE.BASE_LETTER * s;
 
-const fontStr = currentFont === 'sans' ? '"Noto Sans SC",sans-serif' : '"Fusion Pixel",monospace';
+const fontStr = currentFont === 'sans' ? '"Noto Sans SC",sans-serif' : 'monospace';
 ctx.font=fSize+'px '+fontStr;
 ctx.textBaseline='top';
 let lines=[],cur='',curW=0;
@@ -296,21 +296,16 @@ highLightStyle();autoFontColor();
 }
 function highLightStyle(){document.querySelectorAll('.style-card').forEach(d=>d.classList.toggle('active',d.dataset.style===currentStyle))}
 
-// 🔴 唯一修改：手机字体生效（原版逻辑完全不变）
+// 🔥 修复3：手机字体强制生效（删除无效加载，直接使用系统兼容字体）
 function bindFontBtn(){
 document.querySelectorAll('.font-card').forEach(d=>{
-d.onclick=async()=>{
+d.onclick=()=>{
   currentFont=d.dataset.font;
   document.querySelectorAll('.font-card').forEach(x=>x.classList.remove('active'));
   d.classList.add('active');
-  await document.fonts.load(`${BASE.BASE_FONT}px ${getFont(currentFont)}`);
   drawAll();
 }
 })
-}
-function getFont(k){
-const map={sans:'"Noto Sans SC",sans-serif',pixel:'"Fusion Pixel",monospace'}
-return map[k];
 }
 function autoFontColor(){textColor.value=styleMap[currentStyle].dark?'#fff':'#000';}
 
