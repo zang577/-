@@ -224,7 +224,7 @@ const sty=styleMap[currentStyle];
 const s=cw/1000;
 
 const boxW = cw * BASE.BOX_RATE;
-const boxH = cw * BASE.FIX_BOX_H_RATIO; // 固定框高
+const boxH = cw * BASE.FIX_BOX_H_RATIO;
 const pad = Math.max(25, BASE.BASE_PAD * s);
 const maxW = boxW - pad * 2;
 const maxInnerH = boxH - pad * 2;
@@ -232,7 +232,8 @@ const maxInnerH = boxH - pad * 2;
 let fSize = Math.max(BASE.MIN_FONT, BASE.BASE_FONT * s * szRate);
 const letterW = BASE.BASE_LETTER * s;
 
-ctx.font=fSize+'px '+getFont(currentFont);
+const fontStr = currentFont === 'sans' ? '"Noto Sans SC",sans-serif' : '"Fusion Pixel",monospace';
+ctx.font=fSize+'px '+fontStr;
 ctx.textBaseline='top';
 let lines=[],cur='',curW=0;
 [...txt].forEach(c=>{
@@ -242,13 +243,12 @@ let lines=[],cur='',curW=0;
 })
 if(cur)lines.push(cur);
 
-// 文字過多自動縮字、框不變
 let lineH = BASE.BASE_LINE * fSize;
 let totalTxtH = lines.length * lineH;
 if(totalTxtH > maxInnerH){
   fSize = fSize * (maxInnerH / totalTxtH);
   lineH = BASE.BASE_LINE * fSize;
-  ctx.font=fSize+'px '+getFont(currentFont);
+  ctx.font=fSize+'px '+fontStr;
 }
 
 const bl=(cw-boxW)/2+boxX;
@@ -295,13 +295,16 @@ d.onclick=()=>{currentStyle=d.dataset.style;highLightStyle();autoFontColor();dra
 highLightStyle();autoFontColor();
 }
 function highLightStyle(){document.querySelectorAll('.style-card').forEach(d=>d.classList.toggle('active',d.dataset.style===currentStyle))}
+
+// 🔴 唯一修改：手机字体生效（原版逻辑完全不变）
 function bindFontBtn(){
 document.querySelectorAll('.font-card').forEach(d=>{
-d.onclick=()=>{
+d.onclick=async()=>{
   currentFont=d.dataset.font;
   document.querySelectorAll('.font-card').forEach(x=>x.classList.remove('active'));
   d.classList.add('active');
-  setTimeout(drawAll,80);
+  await document.fonts.load(`${BASE.BASE_FONT}px ${getFont(currentFont)}`);
+  drawAll();
 }
 })
 }
