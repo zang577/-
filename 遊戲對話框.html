@@ -261,7 +261,8 @@ function drawCore(ctx, cw, ch) {
   const s      = Math.min(cw, ch) / 1000;  // A: 以短邊為基準，大圖時對話框/字體不會過小
 
   const boxW = cw * BASE.BOX_RATE;
-  const boxH = cw * BASE.FIX_BOX_H_RATIO;
+  // boxH 和 pad 跟 fSize 同樣用短邊基準 s，確保框與字比例一致
+  const boxH = Math.min(cw, ch) * BASE.FIX_BOX_H_RATIO * 1.4;
   const pad  = Math.max(25, BASE.BASE_PAD * s);
   const maxW = boxW - pad * 2;
   const maxInnerH = boxH - pad * 2;
