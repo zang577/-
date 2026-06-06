@@ -271,32 +271,46 @@ function drawCore(ctx, cw, ch) {
   const letterW = BASE.BASE_LETTER * s;
 
   const fontStr = currentFont === 'sans' ? '"Noto Sans SC",sans-serif' : '"Fusion Pixel",monospace';
-  ctx.font = fSize + 'px ' + fontStr;
-  ctx.textBaseline = 'top';
+  ctx.textBaseline = 'alphabetic';
 
-  // 換行：只計算字本身的寬度，不加 letterW（letterW 是繪製間距，不影響換行邊界）
-  let lines = [], cur = '', curW = 0;
-  [...txt].forEach(c => {
-    const w = ctx.measureText(c).width;
-    if (curW + w <= maxW) { cur += c; curW += w; }
-    else { lines.push(cur); cur = c; curW = w; }
-  });
-  if (cur) lines.push(cur);
+  // 用 measureText 量出實際字元高度，用於精確垂直居中
+  function getLineMetrics(size) {
+    ctx.font = size + 'px ' + fontStr;
+    const m = ctx.measureText('測Ag');
+    const ascent  = m.actualBoundingBoxAscent  || size * 0.8;
+    const descent = m.actualBoundingBoxDescent || size * 0.2;
+    return { ascent, descent, height: ascent + descent };
+  }
 
-  let lineH = BASE.BASE_LINE * fSize;
-  let totalTxtH = lines.length * lineH;
-  if (totalTxtH > maxInnerH) {
-    fSize  = fSize * (maxInnerH / totalTxtH);
-    lineH  = BASE.BASE_LINE * fSize;
-    ctx.font = fSize + 'px ' + fontStr;
-    // 字縮小後重新計算換行
-    lines = []; cur = ''; curW = 0;
-    [...txt].forEach(c => {
+  // 換行
+  function calcLines(size) {
+    ctx.font = size + 'px ' + fontStr;
+    const ls = [], chunks = [...txt];
+    let cur = '', curW = 0;
+    chunks.forEach(c => {
       const w = ctx.measureText(c).width;
       if (curW + w <= maxW) { cur += c; curW += w; }
-      else { lines.push(cur); cur = c; curW = w; }
+      else { if (cur) ls.push(cur); cur = c; curW = w; }
     });
-    if (cur) lines.push(cur);
+    if (cur) ls.push(cur);
+    return ls;
+  }
+
+  let lines = calcLines(fSize);
+  let metrics = getLineMetrics(fSize);
+  let lineH = metrics.height * BASE.BASE_LINE;
+  let totalTxtH = lines.length * lineH;
+
+  console.log('[drawCore] font='+currentFont+' szRate='+szRate+' fSize='+fSize.toFixed(1)+' maxInnerH='+maxInnerH.toFixed(1)+' totalTxtH='+totalTxtH.toFixed(1)+' lines='+lines.length+' metH='+metrics.height.toFixed(1));
+
+  if (totalTxtH > maxInnerH) {
+    fSize = fSize * (maxInnerH / totalTxtH);
+    fSize = Math.max(BASE.MIN_FONT, fSize);
+    lines   = calcLines(fSize);
+    metrics = getLineMetrics(fSize);
+    lineH   = metrics.height * BASE.BASE_LINE;
+    totalTxtH = lines.length * lineH;
+    console.log('[drawCore] SHRUNK to fSize='+fSize.toFixed(1));
   }
 
   const bl = (cw - boxW) / 2 + boxX;
@@ -322,7 +336,11 @@ function drawCore(ctx, cw, ch) {
 
   ctx.globalAlpha = 1;
   ctx.fillStyle   = col;
-  const startY = bt + pad + (maxInnerH - lines.length * lineH) / 2;
+  ctx.font = fSize + 'px ' + fontStr;
+
+  // 垂直居中：以 ascent 為基準對齊，讓字形實際視覺區塊置中於框內
+  const blockH  = lines.length * lineH;
+  const startY  = bt + pad + (maxInnerH - blockH) / 2 + metrics.ascent;
   lines.forEach((l, i) => {
     let x = bl + pad;
     [...l].forEach(c => { ctx.fillText(c, x, startY + i * lineH); x += ctx.measureText(c).width + letterW; });
