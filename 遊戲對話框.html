@@ -280,14 +280,17 @@ function drawCore(ctx, cw, ch) {
 
   function calcLines(size) {
     ctx.font = size + 'px ' + fontStr;
-    const ls = [], chunks = [...txt];
-    let cur = '', curW = 0;
-    chunks.forEach(c => {
-      const w = ctx.measureText(c).width;
-      if (curW + w <= maxW) { cur += c; curW += w; }
-      else { if (cur) ls.push(cur); cur = c; curW = w; }
+    const ls = [];
+    // 先按手動換行符切段，每段再做自動斷行
+    txt.split('\n').forEach(para => {
+      let cur = '', curW = 0;
+      [...para].forEach(c => {
+        const w = ctx.measureText(c).width;
+        if (curW + w <= maxW) { cur += c; curW += w; }
+        else { if (cur) ls.push(cur); cur = c; curW = w; }
+      });
+      ls.push(cur); // 每段結尾強制換行（空段也推入，保留空白行）
     });
-    if (cur) ls.push(cur);
     return ls;
   }
 
