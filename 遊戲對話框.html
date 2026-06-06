@@ -298,19 +298,16 @@ function drawCore(ctx, cw, ch) {
 
   let lines = calcLines(fSize);
   let metrics = getLineMetrics(fSize);
-  let lineH = metrics.height * BASE.BASE_LINE;
+  // lineH 用 fSize（不用 metH），避免縫合怪等字型 metH 過大撐爆行高
+  let lineH = fSize * BASE.BASE_LINE;
   let totalTxtH = lines.length * lineH;
-
-  console.log('[drawCore] font='+currentFont+' szRate='+szRate+' fSize='+fSize.toFixed(1)+' maxInnerH='+maxInnerH.toFixed(1)+' totalTxtH='+totalTxtH.toFixed(1)+' lines='+lines.length+' metH='+metrics.height.toFixed(1));
 
   if (totalTxtH > maxInnerH) {
     fSize = fSize * (maxInnerH / totalTxtH);
     fSize = Math.max(BASE.MIN_FONT, fSize);
     lines   = calcLines(fSize);
     metrics = getLineMetrics(fSize);
-    lineH   = metrics.height * BASE.BASE_LINE;
-    totalTxtH = lines.length * lineH;
-    console.log('[drawCore] SHRUNK to fSize='+fSize.toFixed(1));
+    lineH   = fSize * BASE.BASE_LINE;
   }
 
   const bl = (cw - boxW) / 2 + boxX;
