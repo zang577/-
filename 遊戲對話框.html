@@ -260,20 +260,16 @@ function drawCore(ctx, cw, ch) {
   const sty    = styleMap[currentStyle];
   const s      = Math.min(cw, ch) / 1000;  // A: 以短邊為基準，大圖時對話框/字體不會過小
 
-  const boxW = cw * BASE.BOX_RATE;
-  // boxH 和 pad 跟 fSize 同樣用短邊基準 s，確保框與字比例一致
-  const boxH = Math.min(cw, ch) * BASE.FIX_BOX_H_RATIO * 1.4;
-  const pad  = Math.max(25, BASE.BASE_PAD * s);
-  const maxW = boxW - pad * 2;
-  const maxInnerH = boxH - pad * 2;
+  const boxW   = cw * BASE.BOX_RATE;
+  const pad    = Math.max(25, BASE.BASE_PAD * s);
+  const maxW   = boxW - pad * 2;
 
-  let fSize   = Math.max(BASE.MIN_FONT, BASE.BASE_FONT * s * szRate);
+  let fSize     = Math.max(BASE.MIN_FONT, BASE.BASE_FONT * s * szRate);
   const letterW = BASE.BASE_LETTER * s;
 
   const fontStr = currentFont === 'sans' ? '"Noto Sans SC",sans-serif' : '"Fusion Pixel",monospace';
   ctx.textBaseline = 'alphabetic';
 
-  // 用 measureText 量出實際字元高度，用於精確垂直居中
   function getLineMetrics(size) {
     ctx.font = size + 'px ' + fontStr;
     const m = ctx.measureText('測Ag');
@@ -282,7 +278,6 @@ function drawCore(ctx, cw, ch) {
     return { ascent, descent, height: ascent + descent };
   }
 
-  // 換行
   function calcLines(size) {
     ctx.font = size + 'px ' + fontStr;
     const ls = [], chunks = [...txt];
@@ -296,19 +291,13 @@ function drawCore(ctx, cw, ch) {
     return ls;
   }
 
-  let lines = calcLines(fSize);
+  let lines   = calcLines(fSize);
   let metrics = getLineMetrics(fSize);
-  // lineH 用 fSize（不用 metH），避免縫合怪等字型 metH 過大撐爆行高
-  let lineH = fSize * BASE.BASE_LINE;
-  let totalTxtH = lines.length * lineH;
+  let lineH   = fSize * BASE.BASE_LINE;
 
-  if (totalTxtH > maxInnerH) {
-    fSize = fSize * (maxInnerH / totalTxtH);
-    fSize = Math.max(BASE.MIN_FONT, fSize);
-    lines   = calcLines(fSize);
-    metrics = getLineMetrics(fSize);
-    lineH   = fSize * BASE.BASE_LINE;
-  }
+  // 框高由文字決定：文字佔多高，框就多高（加 padding）
+  const boxH     = lines.length * lineH + pad * 2;
+  const maxInnerH = boxH - pad * 2;
 
   const bl = (cw - boxW) / 2 + boxX;
   let   bt = ch - boxH - mar + boxY;
