@@ -251,7 +251,7 @@ function drawCore(ctx, cw, ch) {
   const mar    = (bottomMarginSlider.value / 100) * ch;
   const szRate = textSizeSlider.value / 100;
   const sty    = styleMap[currentStyle];
-  const s      = cw / 1000;
+  const s      = Math.min(cw, ch) / 1000;  // A: 以短邊為基準，大圖時對話框/字體不會過小
 
   const boxW = cw * BASE.BOX_RATE;
   const boxH = cw * BASE.FIX_BOX_H_RATIO;
@@ -381,7 +381,16 @@ function bindAllEvent() {
     const fr = new FileReader();
     fr.onload = ev => {
       const img = new Image();
-      img.onload = () => { originalImg = img; boxX = boxY = 0; setExportSize(); calcPreviewScale(); drawAll(); emptyHint.style.display = 'none'; downloadBtn.disabled = false; };
+      img.onload = () => {
+        originalImg = img; boxX = boxY = 0;
+        // D: 根據圖片短邊自動調整文字大小滑桿
+        const shortSide = Math.min(img.width, img.height);
+        const autoSize = Math.min(150, Math.max(80, Math.round(shortSide / 12)));
+        textSizeSlider.value = Math.round(autoSize / 10) * 10;
+        updateSliderValues();
+        setExportSize(); calcPreviewScale(); drawAll();
+        emptyHint.style.display = 'none'; downloadBtn.disabled = false;
+      };
       img.src = ev.target.result;
     };
     fr.readAsDataURL(f);
