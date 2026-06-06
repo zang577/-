@@ -325,8 +325,11 @@ function drawCore(ctx, cw, ch) {
   ctx.font = fSize + 'px ' + fontStr;
 
   // 垂直居中：以 ascent 為基準對齊，讓字形實際視覺區塊置中於框內
-  const blockH  = lines.length * lineH;
-  const startY  = bt + pad + (maxInnerH - blockH) / 2 + metrics.ascent;
+  // 垂直居中：框內正中間，用 alphabetic baseline + ascent 定位
+  // boxH = blockH + pad*2，所以文字區塊頂部 = bt + pad
+  // 再加上 (lineH - metrics.height)/2 讓每行文字在行高中垂直置中
+  const lineOffset = (lineH - metrics.height) / 2;
+  const startY = bt + pad + metrics.ascent + lineOffset;
   lines.forEach((l, i) => {
     let x = bl + pad;
     [...l].forEach(c => { ctx.fillText(c, x, startY + i * lineH); x += ctx.measureText(c).width + letterW; });
