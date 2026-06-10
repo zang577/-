@@ -175,14 +175,14 @@ const styleGroups = {
   classic:[{key:'game1',name:'黑白'},{key:'style1',name:'純紫'},{key:'style2',name:'藍'},{key:'style3',name:'紫'},{key:'style12',name:'粉'},{key:'style14',name:'白雲天空'},{key:'style15',name:'純粉'},{key:'mora1',name:'莫蘭迪咖'},{key:'mora2',name:'莫蘭迪灰'},{key:'maca1',name:'淺粉'},{key:'maca2',name:'薄荷'}],
   cyber:[{key:'castle1',name:'白電光'}],
   new:[{key:'new1',name:'三層白'},{key:'new3',name:'浪漫'},{key:'new7',name:'信紙咖'},{key:'new8',name:'甜蜜'},{key:'new11',name:'漫畫尖角'},{key:'new12',name:'藍波雲'},{key:'sum1',name:'夏日清涼'},{key:'pea1',name:'水蜜桃'},{key:'school1',name:'信紙藍'}],
-  transparent:[{key:'ani1',name:'白透'},{key:'ani2',name:'磨砂'}]
+  transparent:[{key:'ani1',name:'白透'},{key:'ani2',name:'磨砂'},{key:'glass',name:'玻璃'}]
 };
 const styleMap = {
   game1:{bg:'#111',border:'#EEE',dark:1}, style1:{bg:'#FFDFFF',border:'#A855F7'}, style2:{bg:'#FFF',border:'#0EA5E9'},
   style3:{bg:'#FFF',border:'#9333EA'}, style12:{bg:'#FFF',border:'#FF69B4'}, style14:{bg:'#87CEFA',border:'#FFF'},
   style15:{bg:'#FFB6C1',border:'#FF1493'}, maca1:{bg:'#FFEEF4',border:'#F8BBD0'}, maca2:{bg:'#E8F8F5',border:'#80CBC4'},
   mora1:{bg:'#EAE2E2',border:'#BFA8A8'}, mora2:{bg:'#E2E8F0',border:'#94A3B8'}, ani1:{bg:'rgba(255,255,255,0.88)',border:'#D1D5DB'},
-  ani2:{bg:'rgba(255,255,250,0.92)',border:'rgba(200,200,200,0.7)'}, new1:{bg:'#121212',border:'#E5E5E5',dark:1},
+  ani2:{bg:'rgba(255,255,250,0.92)',border:'rgba(200,200,200,0.7)'}, glass:{bg:'rgba(80,200,240,0.30)',border:'rgba(255,255,255,0.90)',glass:1}, new1:{bg:'#121212',border:'#E5E5E5',dark:1},
   new3:{bg:'#FFEEF6',border:'#FFB7C5'}, new7:{bg:'#F5EFE2',border:'#A89078'}, new8:{bg:'#FFEEF2',border:'#F472B6'},
   new11:{bg:'#FFF',border:'#64748B'}, new12:{bg:'#E0F7FA',border:'#4DD0E1'}, sum1:{bg:'#E6FFFA',border:'#22D3EE'},
   pea1:{bg:'#FFECEC',border:'#FDA4AF'}, school1:{bg:'#EFF6FF',border:'#60A5FA'}, castle1:{bg:'#1E293B',border:'#CBD5E1',dark:1}
@@ -318,6 +318,25 @@ function drawCore(ctx, cw, ch) {
     ctx.beginPath(); ctx.roundRect(bl, bt, boxW, boxH, 12 * s); ctx.fill(); ctx.stroke();
   } else if (currentStyle === 'ani2') {
     ctx.beginPath(); ctx.roundRect(bl, bt, boxW, boxH, 16 * s); ctx.fill(); ctx.stroke();
+  } else if (currentStyle === 'glass') {
+    const r = 14 * s;
+    // 底層：半透明藍色玻璃主體
+    ctx.beginPath(); ctx.roundRect(bl, bt, boxW, boxH, r); ctx.fill();
+    // 光澤層：上半部白色漸層，模擬透光感
+    const gloss = ctx.createLinearGradient(bl, bt, bl, bt + boxH * 0.55);
+    gloss.addColorStop(0,   'rgba(255,255,255,0.22)');
+    gloss.addColorStop(0.5, 'rgba(255,255,255,0.06)');
+    gloss.addColorStop(1,   'rgba(255,255,255,0)');
+    ctx.fillStyle = gloss;
+    ctx.beginPath(); ctx.roundRect(bl, bt, boxW, boxH * 0.55, [r, r, 0, 0]); ctx.fill();
+    // 邊框：藍白色半透明
+    ctx.strokeStyle = sty.border;
+    ctx.lineWidth   = Math.max(1.5, 3 * s);
+    ctx.beginPath(); ctx.roundRect(bl, bt, boxW, boxH, r); ctx.stroke();
+    // 內側細線：增加玻璃厚度感
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth   = Math.max(1, 1.5 * s);
+    ctx.beginPath(); ctx.roundRect(bl + 3*s, bt + 3*s, boxW - 6*s, boxH - 6*s, r - 2*s); ctx.stroke();
   } else {
     ctx.fillRect(bl, bt, boxW, boxH);
     ctx.strokeRect(bl, bt, boxW, boxH);
