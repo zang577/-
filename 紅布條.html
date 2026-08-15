@@ -1098,16 +1098,9 @@
     const construction = currentConstruction();
     const sag = h * 0.03 * construction.sagMult;
 
-    // cast shadow onto backdrop
-    g.save();
-    g.shadowColor = 'rgba(15,10,8,0.4)';
-    g.shadowBlur = 30;
-    g.shadowOffsetY = 14;
-    g.beginPath();
-    tracePath(g,left,top,right,bottom,sag);
-    g.fillStyle = 'rgba(0,0,0,1)';
-    g.fill();
-    g.restore();
+    // Note: no drop shadow is baked into the fabric shape itself — this keeps
+    // the exported PNG cleanly transparent outside the banner (and its ropes)
+    // with no translucent halo bleeding into the padding area.
 
     g.save();
     g.beginPath();
@@ -1146,6 +1139,16 @@
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
 
+    // gentle vignette for depth (photographic falloff, not a perfect circle)
+    // NOTE: this gradient fill is intentionally drawn BEFORE the patterned grain fill below —
+    // a gradient-fill immediately after a pattern-fill using a non-'source-over' composite
+    // operation can corrupt in some canvas renderers, so gradients are kept ahead of patterns.
+    const vign = g.createRadialGradient((left+right)/2,(top+bottom)/2, w*0.25, (left+right)/2,(top+bottom)*0.5, w*0.72);
+    vign.addColorStop(0,'rgba(0,0,0,0)');
+    vign.addColorStop(1, `rgba(0,0,0,${style.vignette})`);
+    g.fillStyle = vign;
+    g.fillRect(left-4, top-4, w+8, h+8);
+
     // subtle fine fabric grain
     const tile = getNoiseTile();
     const pattern = g.createPattern(tile,'repeat');
@@ -1155,13 +1158,6 @@
     g.fillRect(left-4, top-4, w+8, h+8);
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
-
-    // gentle vignette for depth (photographic falloff, not a perfect circle)
-    const vign = g.createRadialGradient((left+right)/2,(top+bottom)/2, w*0.25, (left+right)/2,(top+bottom)*0.5, w*0.72);
-    vign.addColorStop(0,'rgba(0,0,0,0)');
-    vign.addColorStop(1, `rgba(0,0,0,${style.vignette})`);
-    g.fillStyle = vign;
-    g.fillRect(left-4, top-4, w+8, h+8);
 
     // decorative inset frame border (framed construction only)
     if(construction.hasFrame && !construction.frameThick){
