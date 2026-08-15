@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>紅布條產生器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Taipei+Sans+TC+Beta:wght@400;700;900&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+HK:wght@400;700;900&family=Klee+One:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --white: #FFFFFF;
+    --paper: #FBFAF8;
+    --ink: #4A433D;
+    --ink-soft: #857B72;
+    --line: #E7E1D9;
+    --rose: #C9A79E;
+    --rose-deep: #B08D82;
+    --sage: #A6AF9C;
+    --taupe: #C7BDAE;
+    --slate: #97A2A0;
+    --shadow: 0 8px 24px rgba(74,67,61,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--white);
+    color:var(--ink);
+    font-family:"Inter","Noto Sans TC",sans-serif;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:1000px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+  header{
+    margin-bottom:20px;
+  }
+  h1{
+    font-family:"LXGW WenKai TC","Noto Sans TC",serif;
+    font-weight:700;
+    font-size:26px;
+    margin:0;
+    letter-spacing:0.02em;
+    color:var(--ink);
+  }
+
+  /* ---------- Stage (preview) ---------- */
+  .stage-area{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px;
+    box-shadow:0 10px 28px rgba(74,67,61,0.14);
+    margin-bottom:22px;
+    position:sticky;
+    top:12px;
+    z-index:20;
+  }
+  .stage-frame{
+    position:relative;
+    width:100%;
+    border-radius:10px;
+    overflow:hidden;
+    background:
+      linear-gradient(45deg, #EFEAE2 25%, transparent 25%),
+      linear-gradient(-45deg, #EFEAE2 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #EFEAE2 75%),
+      linear-gradient(-45deg, transparent 75%, #EFEAE2 75%);
+    background-size: 24px 24px;
+    background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
+    background-color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #stage{
+    display:block;
+    width:100%;
+    height:auto;
+  }
+
+  /* ---------- Controls ---------- */
+  .panel{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:20px;
+    box-shadow:var(--shadow);
+  }
+  .grid-fields{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:14px;
+    margin-bottom:18px;
+  }
+  @media (max-width: 620px){
+    .grid-fields{grid-template-columns:1fr;}
+  }
+  .field label{
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    letter-spacing:0.04em;
+    display:block;
+    margin-bottom:6px;
+  }
+  input[type="text"]{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--white);
+    font-family:"Noto Sans TC",sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  input[type="text"]:focus{
+    border-color:var(--rose-deep);
+  }
+  .row{
+    display:flex;
+    gap:14px;
+    align-items:flex-end;
+    flex-wrap:wrap;
+  }
+  .font-field{
+    flex:0 0 auto;
+  }
+  .radio-row{
+    display:flex;
+    gap:8px;
+  }
+  .radio-chip{
+    text-align:center;
+    padding:9px 16px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--white);
+    font-size:13px;
+    cursor:pointer;
+    color:var(--ink);
+    transition:all .15s ease;
+    user-select:none;
+  }
+  .radio-chip.sans{font-family:"Noto Sans TC",sans-serif; font-weight:700;}
+  .radio-chip.active{
+    background:var(--rose-deep);
+    border-color:var(--rose-deep);
+    color:#fff;
+  }
+  .btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:11px 22px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--rose-deep);
+    color:#fff;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .15s ease;
+    font-family:"Inter","Noto Sans TC",sans-serif;
+    flex:1;
+    min-width:160px;
+  }
+  .btn:hover{background:#9E766B;}
+  .icon{width:15px; height:15px; flex:0 0 auto;}
+
+  .style-swatches{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .swatch-btn{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:4px;
+    font-family:"Noto Sans TC",sans-serif;
+  }
+  .swatch-circle{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    border:3px solid transparent;
+    box-shadow:0 2px 6px rgba(74,67,61,0.15);
+    transition:all .15s ease;
+    position:relative;
+  }
+  .swatch-btn.active .swatch-circle{
+    border-color:var(--rose-deep);
+    box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--rose-deep);
+  }
+  .swatch-btn.active .swatch-circle::after{
+    content:'✓';
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+  }
+  .swatch-label{
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .swatch-btn.active .swatch-label{
+    color:var(--ink);
+    font-weight:700;
+  }
+
+  .footer-note{
+    margin-top:22px;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    text-align:center;
+    line-height:1.7;
+  }
+
+  .template-buttons{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .tpl-btn{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    padding:10px 12px 9px;
+    border-radius:12px;
+    border:1.5px solid var(--line);
+    background:var(--white);
+    cursor:pointer;
+    transition:all .15s ease;
+    min-width:84px;
+  }
+  .tpl-btn:hover{border-color:var(--rose);}
+  .tpl-btn.active{
+    border-color:var(--rose-deep);
+    background:#FBF3F0;
+  }
+  .tpl-icon{
+    width:64px;
+    height:34px;
+    border-radius:4px;
+    background:#c81810;
+    position:relative;
+    overflow:hidden;
+    flex:0 0 auto;
+  }
+  .tpl-icon .bar{
+    position:absolute;
+    background:rgba(255,255,255,0.92);
+    border-radius:1px;
+  }
+  .tpl-icon.font-icon{
+    background:var(--white);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--rose-deep);
+    font-size:22px;
+    line-height:1;
+    border:1px solid var(--line);
+  }
+  .tpl-label{
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .tpl-btn.active .tpl-label{
+    color:var(--ink);
+    font-weight:700;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>紅布條產生器</h1>
+  </header>
+
+  <!-- PREVIEW -->
+  <div class="stage-area">
+    <div class="stage-frame">
+      <canvas id="stage"></canvas>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="panel">
+    <div class="field" style="margin-bottom:18px;">
+      <label>布條款式（布邊、繩子）</label>
+      <div class="template-buttons" id="constructionButtons"></div>
+    </div>
+
+    <div class="field" style="margin-bottom:18px;">
+      <label>布條紋路（皺褶質感）</label>
+      <div class="template-buttons" id="textureButtons"></div>
+    </div>
+
+    <div class="field" style="margin-bottom:18px;">
+      <label>布條版型</label>
+      <div class="template-buttons" id="templateButtons"></div>
+    </div>
+
+    <div class="grid-fields" id="dynamicFields"></div>
+
+    <div class="field" style="margin-bottom:18px;">
+      <label>顏色模式</label>
+      <div class="radio-row" id="colorModeToggle">
+        <div class="radio-chip active" data-mode="solid">純色</div>
+        <div class="radio-chip" data-mode="gradient">漸層色</div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:18px;">
+      <label>布條顏色</label>
+      <div class="style-swatches" id="styleSwatches"></div>
+    </div>
+
+    <div class="field" style="margin-bottom:18px;">
+      <label>字型</label>
+      <div class="template-buttons" id="fontButtons"></div>
+    </div>
+
+    <button class="btn" id="downloadBtn" style="width:100%;">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M12 15l-4-4M12 15l4-4"/><path d="M4 19h16"/></svg>
+      下載圖片
+    </button>
+  </div>
+
+  <div class="footer-note">
+    網站介面色彩取自莫蘭迪色系；字型皆採用 Google Fonts 上的 Noto Sans TC、Taipei Sans TC Beta、LXGW WenKai TC、Noto Sans HK、Klee One（皆為 SIL Open Font License，可商用）。<br>
+    所有影像處理皆在您的瀏覽器中完成，不會上傳到伺服器。
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- seeded random (keeps the fabric wrinkle pattern stable while text changes) ----------
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const rand = mulberry32(20240613);
+
+  // ---------- fonts (all free for commercial use — SIL Open Font License) ----------
+  const FONTS = [
+    { id:'Noto Sans TC', name:'思源黑體', weight:900, sample:'紅' },
+    { id:'Taipei Sans TC Beta', name:'台北黑體', weight:900, sample:'囍' },
+    { id:'Noto Sans HK', name:'思源黑體HK', weight:900, sample:'賀' },
+    { id:'LXGW WenKai TC', name:'霞鶩文楷', weight:700, sample:'慶' },
+    { id:'Klee One', name:'圓潤手寫', weight:600, sample:'樂' }
+  ];
+
+  // ---------- banner intrinsic canvas ----------
+  const CORE_W = 1400, CORE_H = 320;   // banner rectangle
+  const PAD = 60;                      // room for ropes
+  const BC_W = CORE_W + PAD*2, BC_H = CORE_H + PAD*2;
+
+  const stage = document.getElementById('stage');
+  const ctx = stage.getContext('2d');
+  let dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  // ---------- banner color presets (sampled closer to real photographed vinyl banners) ----------
+  const STYLES = [
+    { id:'bright',   name:'亮紅', colors:['#f2503e','#e5261a','#cc1810','#a8110a'], light:'rgba(255,232,210,0.26)', vignette:0.14 },
+    { id:'classic',  name:'大紅', colors:['#e23a2c','#c81f16','#a81810','#8a1209'], light:'rgba(255,220,195,0.20)', vignette:0.18 },
+    { id:'standard', name:'正紅', colors:['#e8483a','#d1281c','#b01f14','#8c160d'], light:'rgba(255,224,195,0.22)', vignette:0.17 },
+    { id:'vivid',    name:'鮮紅', colors:['#ff3b28','#f01c10','#d81409','#b30f06'], light:'rgba(255,226,200,0.28)', vignette:0.13 },
+    { id:'muted',    name:'沉穩紅', colors:['#c94436','#b02f22','#96261b','#7a1e15'], light:'rgba(255,214,195,0.16)', vignette:0.22 },
+    { id:'rich',     name:'深邃紅', colors:['#d2372a','#b81e12','#9c170e','#7e120a'], light:'rgba(255,214,195,0.18)', vignette:0.23 },
+    { id:'rouge',    name:'胭脂紅', colors:['#e63c34','#cc1f1c','#ab1614','#8a1010'], light:'rgba(255,220,205,0.20)', vignette:0.19 }
+  ];
+
+  // ---------- banner layout templates ----------
+  const TEMPLATES = [
+    {
+      id:'single', name:'單行標語',
+      icon:[{x:8,y:14,w:48,h:7}],
+      fields:[{key:'text', label:'標語文字', maxlength:30, default:'加「LINE」投資 小心有詐 快打165'}]
+    },
+    {
+      id:'twoLine', name:'主副標題',
+      icon:[{x:12,y:9,w:40,h:8},{x:18,y:20,w:28,h:5}],
+      fields:[
+        {key:'line1', label:'主標題', maxlength:20, default:'即將盛大開幕'},
+        {key:'line2', label:'副標題（選填）', maxlength:24, default:'敬請期待'}
+      ]
+    },
+    {
+      id:'threeLine', name:'三行標題',
+      icon:[{x:16,y:6,w:32,h:4},{x:8,y:14,w:48,h:8},{x:16,y:26,w:32,h:4}],
+      fields:[
+        {key:'top', label:'頂部小字', maxlength:20, default:'年度盛典'},
+        {key:'main', label:'主標題', maxlength:20, default:'感謝各界蒞臨指導'},
+        {key:'bottom', label:'底部小字', maxlength:20, default:'敬祝順利成功'}
+      ]
+    },
+    {
+      id:'tagLine', name:'標籤款',
+      icon:[{x:8,y:12,w:14,h:10},{x:26,y:13,w:30,h:8}],
+      fields:[
+        {key:'tag', label:'標籤文字', maxlength:6, default:'公告'},
+        {key:'text', label:'主要文字', maxlength:24, default:'校慶運動會延期舉行'}
+      ]
+    },
+    {
+      id:'fourLine', name:'多行公告',
+      icon:[{x:10,y:5,w:44,h:3},{x:6,y:11,w:52,h:8},{x:10,y:22,w:44,h:3},{x:10,y:27,w:44,h:3}],
+      fields:[
+        {key:'l1', label:'第一行（選填）', maxlength:26, default:'高雄市政府教育局指導'},
+        {key:'l2', label:'第二行（主標題）', maxlength:22, default:'第37周年校慶猜謎大會'},
+        {key:'l3', label:'第三行（選填）', maxlength:26, default:'佛光山主辦'},
+        {key:'l4', label:'第四行（選填）', maxlength:26, default:'高雄市謎學研究會承辦'}
+      ]
+    },
+    {
+      id:'cornerBadge', name:'角標款',
+      icon:[{x:6,y:6,w:14,h:8},{x:12,y:17,w:40,h:8}],
+      fields:[
+        {key:'badge', label:'角標文字', maxlength:6, default:'公告'},
+        {key:'main', label:'主標題', maxlength:20, default:'即將盛大開幕'}
+      ]
+    },
+    {
+      id:'leftRightInfo', name:'資訊款',
+      icon:[{x:6,y:6,w:26,h:4},{x:10,y:14,w:44,h:9},{x:32,y:27,w:26,h:4}],
+      fields:[
+        {key:'top', label:'頂部小字（靠左）', maxlength:30, default:'高雄市政府教育局指導 社會局指導補助'},
+        {key:'main', label:'主標題（置中）', maxlength:22, default:'普門高中第37周年校慶猜謎大會'},
+        {key:'bottom', label:'底部小字（靠右）', maxlength:30, default:'佛光山主辦 高雄市謎學研究會承辦'}
+      ]
+    }
+  ];
+
+  // ---------- banner construction presets (fabric edge / rope / grommet look) ----------
+  const CONSTRUCTIONS = [
+    {
+      id:'eyelet', name:'穿繩眼款', sagMult:1, wrinkleMult:1, hasFrame:false, grommets:'four',
+      svg:'<rect x="4" y="6" width="56" height="22" rx="1.5" fill="#c81810"/><circle cx="9" cy="10" r="2" fill="#eee"/><circle cx="55" cy="10" r="2" fill="#eee"/><circle cx="9" cy="24" r="2" fill="#eee"/><circle cx="55" cy="24" r="2" fill="#eee"/><path d="M9 10 L2 2" stroke="#8a7a63" stroke-width="1.6" fill="none"/><path d="M55 10 L62 2" stroke="#8a7a63" stroke-width="1.6" fill="none"/><path d="M9 24 L2 32" stroke="#8a7a63" stroke-width="1.6" fill="none"/><path d="M55 24 L62 32" stroke="#8a7a63" stroke-width="1.6" fill="none"/>'
+    },
+    {
+      id:'rodPocket', name:'吊繩款', sagMult:1.7, wrinkleMult:1.25, hasFrame:false, grommets:'none',
+      svg:'<rect x="8" y="6" width="48" height="22" rx="1" fill="#c81810"/><rect x="8" y="6" width="4" height="22" fill="#96130c"/><rect x="52" y="6" width="4" height="22" fill="#96130c"/><path d="M8 11 C0 11 0 8 0 8" stroke="#e9e2d2" stroke-width="2" fill="none"/><path d="M56 11 C64 11 64 8 64 8" stroke="#e9e2d2" stroke-width="2" fill="none"/>'
+    },
+    {
+      id:'tie', name:'綁帶款', sagMult:1.3, wrinkleMult:1.05, hasFrame:false, grommets:'tie',
+      svg:'<rect x="6" y="6" width="52" height="22" rx="1.5" fill="#c81810"/><path d="M9 9 l4 4 l-4 4 l4 -4 z" fill="#f4e8c8" stroke="#8a7a63" stroke-width="0.8"/><path d="M55 9 l-4 4 l4 4 l-4 -4 z" fill="#f4e8c8" stroke="#8a7a63" stroke-width="0.8"/>'
+    },
+    {
+      id:'framed', name:'框邊款', sagMult:0.5, wrinkleMult:0.6, hasFrame:true, frameColor:'rgba(255,255,255,0.85)', grommets:'top',
+      svg:'<rect x="4" y="6" width="56" height="22" rx="1.5" fill="#c81810"/><rect x="7" y="9" width="50" height="16" fill="none" stroke="#f4e8c8" stroke-width="1.4"/><circle cx="9" cy="10" r="2" fill="#eee"/><circle cx="55" cy="10" r="2" fill="#eee"/><path d="M9 10 L2 2" stroke="#8a7a63" stroke-width="1.6" fill="none"/><path d="M55 10 L62 2" stroke="#8a7a63" stroke-width="1.6" fill="none"/>'
+    },
+    {
+      id:'plain', name:'素面款', sagMult:0.35, wrinkleMult:0.45, hasFrame:false, grommets:'clean',
+      svg:'<rect x="6" y="7" width="52" height="20" rx="1.5" fill="#c81810"/>'
+    }
+  ];
+
+  // ---------- banner texture / wrinkle presets ----------
+  const TEXTURES = [
+    {
+      id:'smooth', name:'平整光滑', seed:1001,
+      undulation:{count:2, ampMin:0.018, ampMax:0.03, blur:30, angleDeg:0},
+      major:{count:2, thickMin:0.007, thickMax:0.011, angleDeg:0, angleJitterDeg:8, blur:14, lengthMult:1.3},
+      fine:{count:22, thickMin:0.003, thickMax:0.005, lenMin:0.05, lenMax:0.10, angleDeg:0, angleJitterDeg:16, blur:4},
+      svg:'<rect x="2" y="2" width="60" height="30" fill="#c81810"/><line x1="8" y1="17" x2="56" y2="17" stroke="#ffffff" stroke-opacity="0.28" stroke-width="1.4"/>'
+    },
+    {
+      id:'natural', name:'自然皺褶', seed:20240613,
+      undulation:{count:6, ampMin:0.05, ampMax:0.12, blur:26, angleDeg:0},
+      major:{count:7, thickMin:0.018, thickMax:0.038, angleDeg:0, angleJitterDeg:14, blur:9, lengthMult:1.4},
+      fine:{count:90, thickMin:0.006, thickMax:0.016, lenMin:0.08, lenMax:0.30, angleDeg:0, angleJitterDeg:28, blur:3},
+      svg:'<rect x="2" y="2" width="60" height="30" fill="#c81810"/><path d="M6 12 Q20 9 34 12 T60 11" stroke="#ffffff" stroke-opacity="0.30" stroke-width="1.3" fill="none"/><path d="M6 22 Q22 25 38 21 T58 23" stroke="#000000" stroke-opacity="0.28" stroke-width="1.3" fill="none"/>'
+    },
+    {
+      id:'heavy', name:'強烈皺褶', seed:555,
+      undulation:{count:10, ampMin:0.08, ampMax:0.16, blur:20, angleDeg:0},
+      major:{count:14, thickMin:0.028, thickMax:0.05, angleDeg:0, angleJitterDeg:30, blur:7, lengthMult:1.5},
+      fine:{count:160, thickMin:0.008, thickMax:0.02, lenMin:0.06, lenMax:0.28, angleDeg:0, angleJitterDeg:80, blur:2.5},
+      svg:'<rect x="2" y="2" width="60" height="30" fill="#c81810"/><path d="M5 8 Q18 5 30 9 T58 7" stroke="#fff" stroke-opacity="0.32" stroke-width="1.2" fill="none"/><path d="M4 15 Q20 20 34 14 T60 17" stroke="#000" stroke-opacity="0.32" stroke-width="1.2" fill="none"/><path d="M6 24 Q22 21 36 26 T58 23" stroke="#fff" stroke-opacity="0.26" stroke-width="1.2" fill="none"/>'
+    },
+    {
+      id:'vertical', name:'直向摺痕', seed:777,
+      undulation:{count:5, ampMin:0.04, ampMax:0.09, blur:24, angleDeg:90},
+      major:{count:8, thickMin:0.02, thickMax:0.04, angleDeg:90, angleJitterDeg:10, blur:8, lengthMult:1.5},
+      fine:{count:80, thickMin:0.006, thickMax:0.014, lenMin:0.06, lenMax:0.20, angleDeg:90, angleJitterDeg:40, blur:3},
+      svg:'<rect x="2" y="2" width="60" height="30" fill="#c81810"/><line x1="16" y1="4" x2="16" y2="30" stroke="#fff" stroke-opacity="0.28" stroke-width="1.3"/><line x1="32" y1="4" x2="32" y2="30" stroke="#000" stroke-opacity="0.26" stroke-width="1.3"/><line x1="48" y1="4" x2="48" y2="30" stroke="#fff" stroke-opacity="0.28" stroke-width="1.3"/>'
+    },
+    {
+      id:'wavy', name:'風吹波浪紋', seed:999,
+      undulation:{count:4, ampMin:0.10, ampMax:0.20, blur:34, angleDeg:16},
+      major:{count:5, thickMin:0.02, thickMax:0.035, angleDeg:16, angleJitterDeg:22, blur:12, lengthMult:1.6},
+      fine:{count:70, thickMin:0.006, thickMax:0.014, lenMin:0.08, lenMax:0.25, angleDeg:16, angleJitterDeg:55, blur:3.5},
+      svg:'<rect x="2" y="2" width="60" height="30" fill="#c81810"/><path d="M4 10 Q16 2 28 10 T52 10 T64 6" stroke="#fff" stroke-opacity="0.32" stroke-width="1.4" fill="none"/><path d="M2 24 Q16 32 30 24 T56 26" stroke="#000" stroke-opacity="0.30" stroke-width="1.4" fill="none"/>'
+    },
+    {
+      id:'crosshatch', name:'交叉揉皺', seed:3141,
+      undulation:{count:7, ampMin:0.06, ampMax:0.12, blur:24, angleDeg:35},
+      major:{count:9, thickMin:0.02, thickMax:0.036, angleDeg:35, angleJitterDeg:70, blur:8, lengthMult:1.3},
+      fine:{count:130, thickMin:0.006, thickMax:0.016, lenMin:0.06, lenMax:0.22, angleDeg:35, angleJitterDeg:80, blur:2.8},
+      svg:'<rect x="2" y="2" width="60" height="30" fill="#c81810"/><path d="M6 6 L52 28" stroke="#fff" stroke-opacity="0.28" stroke-width="1.3"/><path d="M6 28 L52 6" stroke="#000" stroke-opacity="0.28" stroke-width="1.3"/><path d="M14 4 L58 24" stroke="#fff" stroke-opacity="0.20" stroke-width="1.1"/>'
+    },
+    {
+      id:'breeze', name:'微風款', seed:88,
+      undulation:{count:3, ampMin:0.03, ampMax:0.05, blur:32, angleDeg:6},
+      major:{count:3, thickMin:0.01, thickMax:0.016, angleDeg:6, angleJitterDeg:10, blur:16, lengthMult:1.3},
+      fine:{count:36, thickMin:0.004, thickMax:0.008, lenMin:0.06, lenMax:0.14, angleDeg:6, angleJitterDeg:20, blur:4},
+      svg:'<rect x="2" y="2" width="60" height="30" fill="#c81810"/><path d="M6 13 Q22 10 38 13 T62 12" stroke="#ffffff" stroke-opacity="0.22" stroke-width="1.1" fill="none"/><path d="M6 21 Q22 23 38 21 T60 22" stroke="#000000" stroke-opacity="0.18" stroke-width="1.1" fill="none"/>'
+    },
+    {
+      id:'foldLines', name:'摺疊摺痕', seed:462,
+      undulation:{count:2, ampMin:0.02, ampMax:0.03, blur:20, angleDeg:0},
+      major:{count:5, thickMin:0.008, thickMax:0.012, angleDeg:90, angleJitterDeg:3, blur:2.5, lengthMult:1.8},
+      fine:{count:14, thickMin:0.003, thickMax:0.005, lenMin:0.04, lenMax:0.08, angleDeg:90, angleJitterDeg:8, blur:2},
+      svg:'<rect x="2" y="2" width="60" height="30" fill="#c81810"/><line x1="14" y1="3" x2="14" y2="31" stroke="#fff" stroke-opacity="0.35" stroke-width="1"/><line x1="14.6" y1="3" x2="14.6" y2="31" stroke="#000" stroke-opacity="0.3" stroke-width="1"/><line x1="32" y1="3" x2="32" y2="31" stroke="#fff" stroke-opacity="0.35" stroke-width="1"/><line x1="32.6" y1="3" x2="32.6" y2="31" stroke="#000" stroke-opacity="0.3" stroke-width="1"/><line x1="50" y1="3" x2="50" y2="31" stroke="#fff" stroke-opacity="0.35" stroke-width="1"/><line x1="50.6" y1="3" x2="50.6" y2="31" stroke="#000" stroke-opacity="0.3" stroke-width="1"/>'
+    }
+  ];
+
+  const state = {
+    font: 'Noto Sans TC',
+    styleId: 'bright',
+    colorMode: 'solid',
+    templateId: 'twoLine',
+    constructionId: 'eyelet',
+    textureId: 'natural',
+    values: {}
+  };
+  TEMPLATES.forEach(t=>{
+    state.values[t.id] = {};
+    t.fields.forEach(f=>{ state.values[t.id][f.key] = f.default; });
+  });
+
+  function currentStyle(){
+    return STYLES.find(s=>s.id===state.styleId) || STYLES[0];
+  }
+  function currentTemplate(){
+    return TEMPLATES.find(t=>t.id===state.templateId) || TEMPLATES[0];
+  }
+  function currentConstruction(){
+    return CONSTRUCTIONS.find(c=>c.id===state.constructionId) || CONSTRUCTIONS[0];
+  }
+  function currentTexture(){
+    return TEXTURES.find(t=>t.id===state.textureId) || TEXTURES[0];
+  }
+
+  let bannerCanvas = null;
+  let wrinkleLayerCache = {}; // cached per texture id, independent of text
+  function getWrinkleLayer(textureId){
+    if(!wrinkleLayerCache[textureId]){
+      const tex = currentTextureById(textureId);
+      wrinkleLayerCache[textureId] = buildWrinkleLayer(BC_W, BC_H, tex);
+    }
+    return wrinkleLayerCache[textureId];
+  }
+  function currentTextureById(id){
+    return TEXTURES.find(t=>t.id===id) || TEXTURES[0];
+  }
+
+  // ---------- fine grain noise tile ----------
+  let noiseTile = null;
+  function getNoiseTile(){
+    if(noiseTile) return noiseTile;
+    const c = document.createElement('canvas');
+    c.width = 160; c.height = 160;
+    const cx = c.getContext('2d');
+    const img = cx.createImageData(160,160);
+    for(let i=0;i<img.data.length;i+=4){
+      const v = 128 + (rand()-0.5)*90;
+      img.data[i]=v; img.data[i+1]=v; img.data[i+2]=v;
+      img.data[i+3] = 255;
+    }
+    cx.putImageData(img,0,0);
+    noiseTile = c;
+    return c;
+  }
+
+  // ---------- build the wrinkle / fold displacement-like map (neutral gray = no change) ----------
+  // driven by a texture config: {undulation:{count,ampMin,ampMax,blur,angleDeg}, major:{...}, fine:{...}}
+  function buildWrinkleLayer(w,h,tex){
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgb(128,128,128)';
+    g.fillRect(0,0,w,h);
+    const diag = Math.sqrt(w*w+h*h)*1.3;
+
+    // position a band's center by moving along the perpendicular axis of its own angle,
+    // so 'vertical' textures space their creases left-to-right, 'horizontal' ones top-to-bottom
+    function bandCenter(angleDeg, posT){
+      const perp = (angleDeg*Math.PI/180) + Math.PI/2;
+      return {
+        cx: w*0.5 + (posT-0.5)*Math.cos(perp)*diag*0.5,
+        cy: h*0.5 + (posT-0.5)*Math.sin(perp)*diag*0.5
+      };
+    }
+
+    // broad, soft undulations (large-scale sag/billow)
+    const u = tex.undulation;
+    g.filter = `blur(${u.blur}px)`;
+    for(let i=0;i<u.count;i++){
+      const amp = h*(u.ampMin + rand()*(u.ampMax-u.ampMin));
+      const bright = rand()>0.5;
+      const angle = (u.angleDeg + (rand()-0.5)*20) * Math.PI/180;
+      const {cx,cy} = bandCenter(u.angleDeg, rand());
+      g.save();
+      g.translate(cx,cy);
+      g.rotate(angle);
+      const grad = g.createLinearGradient(0,-amp,0,amp);
+      grad.addColorStop(0,'rgba(128,128,128,0)');
+      grad.addColorStop(0.5, bright? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)');
+      grad.addColorStop(1,'rgba(128,128,128,0)');
+      g.fillStyle = grad;
+      g.fillRect(-diag,-amp*1.4,diag*2,amp*2.8);
+      g.restore();
+    }
+
+    // medium creases: soft ridge pairs (highlight+shadow) at slight angles, like folded/rolled cloth
+    const m = tex.major;
+    g.filter = `blur(${m.blur}px)`;
+    for(let i=0;i<m.count;i++){
+      const thick = h*(m.thickMin + rand()*(m.thickMax-m.thickMin));
+      const angle = (m.angleDeg + (rand()-0.5)*m.angleJitterDeg) * Math.PI/180;
+      const {cx,cy} = bandCenter(m.angleDeg, rand());
+      g.save();
+      g.translate(cx,cy);
+      g.rotate(angle);
+      let grad = g.createLinearGradient(0,-thick,0,thick*1.6);
+      grad.addColorStop(0,'rgba(0,0,0,0)');
+      grad.addColorStop(0.45,'rgba(0,0,0,0.30)');
+      grad.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle = grad;
+      g.fillRect(-diag,-thick,diag*2,thick*2.6*m.lengthMult);
+      grad = g.createLinearGradient(0,-thick*2.4,0,-thick*0.2);
+      grad.addColorStop(0,'rgba(255,255,255,0)');
+      grad.addColorStop(0.5,'rgba(255,255,255,0.30)');
+      grad.addColorStop(1,'rgba(255,255,255,0)');
+      g.fillStyle = grad;
+      g.fillRect(-diag,-thick*2.4,diag*2,thick*2.2*m.lengthMult);
+      g.restore();
+    }
+
+    // fine wrinkles: many short, low-opacity, random angle streaks
+    const f = tex.fine;
+    g.filter = `blur(${f.blur}px)`;
+    for(let i=0;i<f.count;i++){
+      const x = w*rand();
+      const y = h*rand();
+      const len = w*(f.lenMin + rand()*(f.lenMax-f.lenMin));
+      const ang = (f.angleDeg + (rand()-0.5)*f.angleJitterDeg) * Math.PI/180;
+      const thick = h*(f.thickMin + rand()*(f.thickMax-f.thickMin));
+      const bright = rand()>0.45;
+      g.save();
+      g.translate(x,y);
+      g.rotate(ang);
+      const grad = g.createLinearGradient(0,-thick,0,thick);
+      grad.addColorStop(0,'rgba(128,128,128,0)');
+      grad.addColorStop(0.5, bright? `rgba(255,255,255,${0.10+rand()*0.12})` : `rgba(0,0,0,${0.10+rand()*0.14})`);
+      grad.addColorStop(1,'rgba(128,128,128,0)');
+      g.fillStyle = grad;
+      g.fillRect(-len/2,-thick*2,len,thick*4);
+      g.restore();
+    }
+    g.filter = 'none';
+
+    return c;
+  }
+
+  function fitFontSize(g, text, maxWidth, startSize, minSize, weight, family){
+    let size = startSize;
+    g.font = `${weight} ${size}px "${family}"`;
+    while(g.measureText(text).width > maxWidth && size > minSize){
+      size -= 3;
+      g.font = `${weight} ${size}px "${family}"`;
+    }
+    return size;
+  }
+
+  // trace a rectangle-ish cloth path with a very gentle sag on top/bottom edges
+  function tracePath(g,left,top,right,bottom,sag){
+    const midX = (left+right)/2;
+    g.moveTo(left, top);
+    g.quadraticCurveTo(midX, top+sag, right, top);
+    g.lineTo(right, bottom);
+    g.quadraticCurveTo(midX, bottom-sag*0.55, left, bottom);
+    g.closePath();
+  }
+
+  function drawGrommet(g, x, y, r){
+    g.save();
+    g.beginPath();
+    g.arc(x,y,r,0,Math.PI*2);
+    g.fillStyle = '#8f8b83';
+    g.fill();
+    g.lineWidth = r*0.28;
+    g.strokeStyle = 'rgba(35,32,28,0.6)';
+    g.stroke();
+    g.beginPath();
+    g.arc(x,y,r*0.46,0,Math.PI*2);
+    g.fillStyle = '#2c2a26';
+    g.fill();
+    g.beginPath();
+    g.arc(x-r*0.25,y-r*0.25,r*0.16,0,Math.PI*2);
+    g.fillStyle='rgba(255,255,255,0.55)';
+    g.fill();
+    g.restore();
+  }
+
+  // draws the corner/edge hardware (grommets + hanging ropes, or a rod-pocket hem with straight ropes)
+  function drawEdgeDetails(g, left, top, right, bottom, w, h, construction){
+    if(construction.grommets === 'four' || construction.grommets === 'top'){
+      const gr = h*0.045;
+      const gy = top + gr*1.8;
+      const gx1 = left + w*0.035;
+      const gx2 = right - w*0.035;
+      drawGrommet(g, gx1, gy, gr);
+      drawGrommet(g, gx2, gy, gr);
+      const hasBottom = (construction.grommets === 'four');
+      let gy2;
+      if(hasBottom){
+        gy2 = bottom - gr*1.8;
+        drawGrommet(g, gx1, gy2, gr);
+        drawGrommet(g, gx2, gy2, gr);
+      }
+      g.save();
+      g.strokeStyle = 'rgba(55,48,40,0.6)';
+      g.lineWidth = gr*0.24;
+      g.lineCap = 'round';
+      // top ropes, angled up and outward
+      g.beginPath();
+      g.moveTo(gx1, gy);
+      g.quadraticCurveTo(gx1 - PAD*0.85, gy - PAD*0.1, gx1 - PAD*0.9, gy - PAD*0.7);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(gx2, gy);
+      g.quadraticCurveTo(gx2 + PAD*0.85, gy - PAD*0.1, gx2 + PAD*0.9, gy - PAD*0.7);
+      g.stroke();
+      // bottom ropes (when present), angled down and outward
+      if(hasBottom){
+        g.beginPath();
+        g.moveTo(gx1, gy2);
+        g.quadraticCurveTo(gx1 - PAD*0.85, gy2 + PAD*0.1, gx1 - PAD*0.9, gy2 + PAD*0.7);
+        g.stroke();
+        g.beginPath();
+        g.moveTo(gx2, gy2);
+        g.quadraticCurveTo(gx2 + PAD*0.85, gy2 + PAD*0.1, gx2 + PAD*0.9, gy2 + PAD*0.7);
+        g.stroke();
+      }
+      g.restore();
+    } else if(construction.grommets === 'none'){
+      // rod-pocket hem: folded fabric tube at each end, with a thick rope threaded straight through
+      const seamW = w*0.024;
+      g.save();
+      let sg = g.createLinearGradient(left, 0, left+seamW*2.2, 0);
+      sg.addColorStop(0,'rgba(0,0,0,0.38)');
+      sg.addColorStop(0.55,'rgba(255,255,255,0.14)');
+      sg.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle = sg;
+      g.fillRect(left, top, seamW*2.2, h);
+      let sg2 = g.createLinearGradient(right-seamW*2.2, 0, right, 0);
+      sg2.addColorStop(0,'rgba(0,0,0,0)');
+      sg2.addColorStop(0.45,'rgba(255,255,255,0.14)');
+      sg2.addColorStop(1,'rgba(0,0,0,0.38)');
+      g.fillStyle = sg2;
+      g.fillRect(right-seamW*2.2, top, seamW*2.2, h);
+      g.restore();
+
+      const ropeY = top + h*0.30;
+      const ropeW = h*0.05;
+      g.save();
+      g.lineCap = 'round';
+      g.strokeStyle = 'rgba(110,95,72,0.5)';
+      g.lineWidth = ropeW + 3;
+      g.beginPath();
+      g.moveTo(left+seamW*0.6, ropeY);
+      g.quadraticCurveTo(left-PAD*0.5, ropeY+h*0.045, left-PAD*0.95, ropeY+h*0.015);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(right-seamW*0.6, ropeY);
+      g.quadraticCurveTo(right+PAD*0.5, ropeY+h*0.045, right+PAD*0.95, ropeY+h*0.015);
+      g.stroke();
+      g.strokeStyle = '#EDE6D6';
+      g.lineWidth = ropeW;
+      g.beginPath();
+      g.moveTo(left+seamW*0.6, ropeY);
+      g.quadraticCurveTo(left-PAD*0.5, ropeY+h*0.045, left-PAD*0.95, ropeY+h*0.015);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(right-seamW*0.6, ropeY);
+      g.quadraticCurveTo(right+PAD*0.5, ropeY+h*0.045, right+PAD*0.95, ropeY+h*0.015);
+      g.stroke();
+      g.restore();
+    } else if(construction.grommets === 'tie'){
+      // small fabric ribbon ties at the top corners instead of rope
+      const tieW = w*0.05, tieH = h*0.14;
+      const tx1 = left + w*0.045, tx2 = right - w*0.045;
+      const ty = top + tieH*0.35;
+      function drawTie(cx){
+        g.save();
+        g.translate(cx, ty);
+        g.fillStyle = 'rgba(244,232,200,0.92)';
+        g.beginPath();
+        g.moveTo(-tieW*0.5, -tieH*0.4);
+        g.lineTo(tieW*0.5, -tieH*0.4);
+        g.lineTo(0, tieH*0.15);
+        g.closePath();
+        g.fill();
+        g.beginPath();
+        g.moveTo(-tieW*0.5, tieH*0.55);
+        g.lineTo(tieW*0.5, tieH*0.55);
+        g.lineTo(0, tieH*0.0);
+        g.closePath();
+        g.fill();
+        g.fillStyle = 'rgba(120,105,80,0.6)';
+        g.beginPath();
+        g.arc(0,0,tieW*0.16,0,Math.PI*2);
+        g.fill();
+        g.restore();
+      }
+      drawTie(tx1);
+      drawTie(tx2);
+    } else if(construction.grommets === 'clean'){
+      // no visible hardware — a plain-cut banner with just the printed edge (already drawn by the caller)
+    }
+  }
+
+  function drawTextLine(g, text, cx, baselineY, weight, size, family){
+    g.font = `${weight} ${size}px "${family}"`;
+    g.textAlign = 'center';
+    g.textBaseline = 'alphabetic';
+    g.fillStyle = 'rgba(0,0,0,0.30)';
+    g.fillText(text, cx, baselineY + size*0.05);
+    g.fillStyle = '#f7f2ec';
+    g.fillText(text, cx, baselineY);
+  }
+
+  // measure a line's visual ascent/descent so we can center it precisely
+  function measureLine(g, text, weight, size, family){
+    g.font = `${weight} ${size}px "${family}"`;
+    g.textAlign = 'center';
+    g.textBaseline = 'alphabetic';
+    const m = g.measureText(text || '\u3000');
+    const ascent = (m.actualBoundingBoxAscent && m.actualBoundingBoxAscent > 0) ? m.actualBoundingBoxAscent : size*0.74;
+    const descent = (m.actualBoundingBoxDescent && m.actualBoundingBoxDescent > 0) ? m.actualBoundingBoxDescent : size*0.18;
+    return { ascent, descent };
+  }
+
+  function roundRectPath(g,x,y,w,h,r){
+    g.beginPath();
+    g.moveTo(x+r,y);
+    g.arcTo(x+w,y,x+w,y+h,r);
+    g.arcTo(x+w,y+h,x,y+h,r);
+    g.arcTo(x,y+h,x,y,r);
+    g.arcTo(x,y,x+w,y,r);
+    g.closePath();
+  }
+
+  // ---------- per-template text layout ----------
+  function drawSingleTemplate(g, box, vals, family){
+    const {left,top,right,bottom} = box;
+    const w = right-left, h = bottom-top;
+    const maxTextWidth = w*0.9;
+    const cx = (left+right)/2, centerY = (top+bottom)/2;
+    const s1 = fitFontSize(g, vals.text, maxTextWidth, h*0.42, h*0.14, 900, family);
+    const m1 = measureLine(g, vals.text, 900, s1, family);
+    const baseline = centerY + (m1.ascent - m1.descent)/2;
+    drawTextLine(g, vals.text, cx, baseline, 900, s1, family);
+  }
+
+  function drawTwoLineTemplate(g, box, vals, family){
+    const {left,top,right,bottom} = box;
+    const w = right-left, h = bottom-top;
+    const maxTextWidth = w*0.86;
+    const cx = (left+right)/2, centerY = (top+bottom)/2;
+    const hasLine2 = vals.line2 && vals.line2.trim().length>0;
+    if(hasLine2){
+      const s1 = fitFontSize(g, vals.line1, maxTextWidth, h*0.40, h*0.14, 900, family);
+      const s2 = fitFontSize(g, vals.line2, maxTextWidth, h*0.24, h*0.09, 700, family);
+      const m1 = measureLine(g, vals.line1, 900, s1, family);
+      const m2 = measureLine(g, vals.line2, 700, s2, family);
+      const gapY = h*0.075;
+      const blockH = m1.ascent + m1.descent + gapY + m2.ascent + m2.descent;
+      const blockTop = centerY - blockH/2;
+      const baseline1 = blockTop + m1.ascent;
+      const baseline2 = baseline1 + m1.descent + gapY + m2.ascent;
+      drawTextLine(g, vals.line1, cx, baseline1, 900, s1, family);
+      drawTextLine(g, vals.line2, cx, baseline2, 700, s2, family);
+    } else {
+      const s1 = fitFontSize(g, vals.line1, maxTextWidth, h*0.44, h*0.16, 900, family);
+      const m1 = measureLine(g, vals.line1, 900, s1, family);
+      const baseline1 = centerY + (m1.ascent - m1.descent)/2;
+      drawTextLine(g, vals.line1, cx, baseline1, 900, s1, family);
+    }
+  }
+
+  function drawTemplateContent(g, box, family){
+    const tpl = currentTemplate();
+    const vals = state.values[tpl.id];
+    if(tpl.id === 'single') drawSingleTemplate(g, box, vals, family);
+    else if(tpl.id === 'twoLine') drawTwoLineTemplate(g, box, vals, family);
+    else if(tpl.id === 'threeLine') drawThreeLineTemplate(g, box, vals, family);
+    else if(tpl.id === 'tagLine') drawTagLineTemplate(g, box, vals, family);
+    else if(tpl.id === 'fourLine') drawFourLineTemplate(g, box, vals, family);
+    else if(tpl.id === 'cornerBadge') drawCornerBadgeTemplate(g, box, vals, family);
+    else if(tpl.id === 'leftRightInfo') drawLeftRightInfoTemplate(g, box, vals, family);
+  }
+
+  function drawThreeLineTemplate(g, box, vals, family){
+    const {left,top,right,bottom} = box;
+    const w = right-left, h = bottom-top;
+    const maxTextWidth = w*0.86;
+    const cx = (left+right)/2, centerY = (top+bottom)/2;
+    const sTop = fitFontSize(g, vals.top, maxTextWidth, h*0.20, h*0.08, 700, family);
+    const sMain = fitFontSize(g, vals.main, maxTextWidth, h*0.36, h*0.14, 900, family);
+    const sBot = fitFontSize(g, vals.bottom, maxTextWidth, h*0.18, h*0.07, 700, family);
+    const mTop = measureLine(g, vals.top, 700, sTop, family);
+    const mMain = measureLine(g, vals.main, 900, sMain, family);
+    const mBot = measureLine(g, vals.bottom, 700, sBot, family);
+    const gapY = h*0.05;
+    const blockH = mTop.ascent+mTop.descent+gapY + mMain.ascent+mMain.descent+gapY + mBot.ascent+mBot.descent;
+    let cursor = centerY - blockH/2;
+    drawTextLine(g, vals.top, cx, cursor + mTop.ascent, 700, sTop, family);
+    cursor += mTop.ascent + mTop.descent + gapY;
+    drawTextLine(g, vals.main, cx, cursor + mMain.ascent, 900, sMain, family);
+    cursor += mMain.ascent + mMain.descent + gapY;
+    drawTextLine(g, vals.bottom, cx, cursor + mBot.ascent, 700, sBot, family);
+  }
+
+  function drawTagLineTemplate(g, box, vals, family){
+    const {left,top,right,bottom} = box;
+    const w = right-left, h = bottom-top;
+    const centerY = (top+bottom)/2;
+    const style = currentStyle();
+
+    function measureAt(size){
+      g.font = `800 ${size}px "${family}"`;
+      const tagTextW = g.measureText(vals.tag || ' ').width;
+      const tagPad = size*0.35;
+      const tagW = tagTextW + tagPad*2;
+      g.font = `900 ${size}px "${family}"`;
+      const textW = g.measureText(vals.text || ' ').width;
+      const gap = size*0.4;
+      return { tagW, textW, gap, total: tagW+gap+textW };
+    }
+    let size = h*0.34;
+    let met = measureAt(size);
+    const maxW = w*0.88;
+    if(met.total > maxW){ size *= maxW/met.total; met = measureAt(size); }
+
+    const startX = (left+right)/2 - met.total/2;
+    const tagH = size*1.3;
+    const tagY = centerY - tagH/2;
+
+    // tag badge
+    g.fillStyle = '#ffffff';
+    roundRectPath(g, startX, tagY, met.tagW, tagH, size*0.14);
+    g.fill();
+    g.font = `800 ${size}px "${family}"`;
+    g.fillStyle = style.colors[2];
+    g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillText(vals.tag, startX + (met.tagW - g.measureText(vals.tag).width)/2, centerY + size*0.03);
+
+    // main text
+    g.font = `900 ${size}px "${family}"`;
+    g.textBaseline = 'alphabetic';
+    const mMain = measureLine(g, vals.text, 900, size, family);
+    const baseline = centerY + (mMain.ascent - mMain.descent)/2;
+    const textX = startX + met.tagW + met.gap;
+    g.textAlign = 'left';
+    g.fillStyle = 'rgba(0,0,0,0.3)';
+    g.fillText(vals.text, textX+2, baseline + size*0.05);
+    g.fillStyle = '#ffffff';
+    g.fillText(vals.text, textX, baseline);
+  }
+
+  function drawFourLineTemplate(g, box, vals, family){
+    const {left,top,right,bottom} = box;
+    const w = right-left, h = bottom-top;
+    const maxTextWidth = w*0.88;
+    const cx = (left+right)/2, centerY = (top+bottom)/2;
+    const specs = [
+      {key:'l1', weight:700, maxF:0.15, minF:0.06},
+      {key:'l2', weight:900, maxF:0.28, minF:0.12},
+      {key:'l3', weight:700, maxF:0.14, minF:0.06},
+      {key:'l4', weight:700, maxF:0.14, minF:0.06}
+    ];
+    const active = specs.filter(s => vals[s.key] && vals[s.key].trim().length>0);
+    if(active.length===0) return;
+    const sizes = active.map(s => fitFontSize(g, vals[s.key], maxTextWidth, h*s.maxF, h*s.minF, s.weight, family));
+    const metrics = active.map((s,i) => measureLine(g, vals[s.key], s.weight, sizes[i], family));
+    const gapY = h*0.035;
+    const blockH = metrics.reduce((sum,m)=>sum+m.ascent+m.descent,0) + gapY*(active.length-1);
+    let cursor = centerY - blockH/2;
+    active.forEach((s,i) => {
+      const baseline = cursor + metrics[i].ascent;
+      drawTextLine(g, vals[s.key], cx, baseline, s.weight, sizes[i], family);
+      cursor += metrics[i].ascent + metrics[i].descent + gapY;
+    });
+  }
+
+  function drawCornerBadgeTemplate(g, box, vals, family){
+    const {left,top,right,bottom} = box;
+    const w = right-left, h = bottom-top;
+    const style = currentStyle();
+
+    // badge in the top-left corner
+    const badgeSize = h*0.24;
+    g.font = `800 ${badgeSize*0.62}px "${family}"`;
+    const badgeTextW = g.measureText(vals.badge || ' ').width;
+    const bw = Math.max(badgeSize, badgeTextW + badgeSize*0.5);
+    const bx = left + w*0.03, by = top + h*0.06;
+    g.fillStyle = '#ffffff';
+    roundRectPath(g, bx, by, bw, badgeSize, badgeSize*0.16);
+    g.fill();
+    g.fillStyle = style.colors[2];
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(vals.badge, bx+bw/2, by+badgeSize/2 + badgeSize*0.02);
+
+    // main title, centered across the whole banner
+    const maxTextWidth = w*0.86;
+    const cx = (left+right)/2, centerY = (top+bottom)/2;
+    const s1 = fitFontSize(g, vals.main, maxTextWidth, h*0.40, h*0.14, 900, family);
+    const m1 = measureLine(g, vals.main, 900, s1, family);
+    const baseline = centerY + (m1.ascent - m1.descent)/2;
+    drawTextLine(g, vals.main, cx, baseline, 900, s1, family);
+  }
+
+  function drawLeftRightInfoTemplate(g, box, vals, family){
+    const {left,top,right,bottom} = box;
+    const w = right-left, h = bottom-top;
+    const padX = w*0.028;
+    const centerY = (top+bottom)/2;
+
+    // top small, left aligned
+    const topSize = fitFontSize(g, vals.top, w*0.94, h*0.135, h*0.055, 700, family);
+    const topBaseline = top + h*0.20;
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    g.font = `700 ${topSize}px "${family}"`;
+    g.fillStyle = 'rgba(0,0,0,0.30)';
+    g.fillText(vals.top, left+padX+2, topBaseline + topSize*0.05);
+    g.fillStyle = '#f7f2ec';
+    g.fillText(vals.top, left+padX, topBaseline);
+
+    // main headline, centered, bold and large
+    const mainSize = fitFontSize(g, vals.main, w*0.9, h*0.40, h*0.15, 900, family);
+    const mMain = measureLine(g, vals.main, 900, mainSize, family);
+    const mainBaseline = centerY + (mMain.ascent - mMain.descent)/2 + h*0.02;
+    g.textAlign = 'center';
+    g.font = `900 ${mainSize}px "${family}"`;
+    g.fillStyle = 'rgba(0,0,0,0.32)';
+    g.fillText(vals.main, (left+right)/2+3, mainBaseline + mainSize*0.045);
+    g.fillStyle = '#ffffff';
+    g.fillText(vals.main, (left+right)/2, mainBaseline);
+
+    // bottom small, right aligned
+    const botSize = fitFontSize(g, vals.bottom, w*0.62, h*0.12, h*0.05, 700, family);
+    const mBot = measureLine(g, vals.bottom, 700, botSize, family);
+    const botBaseline = bottom - h*0.09 - mBot.descent;
+    g.textAlign = 'right';
+    g.font = `700 ${botSize}px "${family}"`;
+    g.fillStyle = 'rgba(0,0,0,0.28)';
+    g.fillText(vals.bottom, right-padX+2, botBaseline + botSize*0.05);
+    g.fillStyle = '#f7f2ec';
+    g.fillText(vals.bottom, right-padX, botBaseline);
+  }
+
+  function renderBanner(){
+    const c = document.createElement('canvas');
+    c.width = BC_W; c.height = BC_H;
+    const g = c.getContext('2d');
+    g.clearRect(0,0,BC_W,BC_H);
+
+    const left = PAD, top = PAD, w = CORE_W, h = CORE_H;
+    const right = left + w, bottom = top + h;
+    const construction = currentConstruction();
+    const sag = h * 0.03 * construction.sagMult;
+
+    // cast shadow onto backdrop
+    g.save();
+    g.shadowColor = 'rgba(15,10,8,0.4)';
+    g.shadowBlur = 30;
+    g.shadowOffsetY = 14;
+    g.beginPath();
+    tracePath(g,left,top,right,bottom,sag);
+    g.fillStyle = 'rgba(0,0,0,1)';
+    g.fill();
+    g.restore();
+
+    g.save();
+    g.beginPath();
+    tracePath(g,left,top,right,bottom,sag);
+    g.clip();
+
+    // base fabric colour: either a photographed-look gradient, or a flat pure colour
+    const style = currentStyle();
+    if(state.colorMode === 'solid'){
+      g.fillStyle = style.colors[1];
+      g.fillRect(left-4, top-4, w+8, h+8);
+    } else {
+      const baseGrad = g.createLinearGradient(left, top, right, bottom);
+      baseGrad.addColorStop(0.00, style.colors[0]);
+      baseGrad.addColorStop(0.35, style.colors[1]);
+      baseGrad.addColorStop(0.62, style.colors[2]);
+      baseGrad.addColorStop(1.00, style.colors[3]);
+      g.fillStyle = baseGrad;
+      g.fillRect(left-4, top-4, w+8, h+8);
+    }
+
+    // secondary soft light patch (sun hitting one area unevenly) — subtler in solid mode
+    const lightPatch = g.createRadialGradient(left+w*0.28, top+h*0.15, h*0.1, left+w*0.28, top+h*0.15, w*0.55);
+    lightPatch.addColorStop(0, style.light);
+    lightPatch.addColorStop(1,'rgba(255,214,190,0)');
+    g.fillStyle = lightPatch;
+    g.globalAlpha = state.colorMode === 'solid' ? 0.45 : 1;
+    g.fillRect(left-4, top-4, w+8, h+8);
+    g.globalAlpha = 1;
+
+    // ---- wrinkle / fold map, blended with overlay so it darkens & lightens the cloth naturally ----
+    const wrinkleLayer = getWrinkleLayer(state.textureId);
+    g.globalCompositeOperation = 'overlay';
+    g.globalAlpha = Math.min(1, 0.85*construction.wrinkleMult);
+    g.drawImage(wrinkleLayer, 0, 0);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+
+    // subtle fine fabric grain
+    const tile = getNoiseTile();
+    const pattern = g.createPattern(tile,'repeat');
+    g.globalCompositeOperation = 'overlay';
+    g.globalAlpha = 0.10;
+    g.fillStyle = pattern;
+    g.fillRect(left-4, top-4, w+8, h+8);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+
+    // gentle vignette for depth (photographic falloff, not a perfect circle)
+    const vign = g.createRadialGradient((left+right)/2,(top+bottom)/2, w*0.25, (left+right)/2,(top+bottom)*0.5, w*0.72);
+    vign.addColorStop(0,'rgba(0,0,0,0)');
+    vign.addColorStop(1, `rgba(0,0,0,${style.vignette})`);
+    g.fillStyle = vign;
+    g.fillRect(left-4, top-4, w+8, h+8);
+
+    // decorative inset frame border (framed construction only)
+    if(construction.hasFrame && !construction.frameThick){
+      g.lineWidth = h*0.012;
+      g.strokeStyle = construction.frameColor;
+      g.strokeRect(left+w*0.025, top+h*0.06, w*0.95, h*0.88);
+    }
+
+    g.restore(); // undo clip
+
+    // ---- text ----
+    g.save();
+    g.beginPath();
+    tracePath(g,left,top,right,bottom,sag);
+    g.clip();
+
+    const family = state.font;
+    drawTemplateContent(g, {left, top, right, bottom}, family);
+
+    // let a whisper of the wrinkle map show through the text too (printed ink follows the cloth surface)
+    g.globalCompositeOperation = 'overlay';
+    g.globalAlpha = Math.min(1, 0.35*construction.wrinkleMult);
+    g.drawImage(wrinkleLayer, 0, 0);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+
+    g.restore();
+
+    // ---- edge details: grommets / rope / rod-pocket / frame, per construction style ----
+    drawEdgeDetails(g, left, top, right, bottom, w, h, construction);
+
+    bannerCanvas = c;
+    return c;
+  }
+
+  function sizeStageCanvas(){
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    stage.width = BC_W/2 * dpr;
+    stage.height = BC_H/2 * dpr;
+    stage.style.aspectRatio = (BC_W) + ' / ' + (BC_H);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
+  }
+
+  function draw(){
+    if(!bannerCanvas) renderBanner();
+    ctx.clearRect(0,0,BC_W/2,BC_H/2);
+    ctx.drawImage(bannerCanvas, 0, 0, BC_W/2, BC_H/2);
+  }
+
+  // ---------- UI wiring ----------
+  const dynamicFields = document.getElementById('dynamicFields');
+  function renderDynamicFields(){
+    dynamicFields.innerHTML = '';
+    const tpl = currentTemplate();
+    tpl.fields.forEach(f=>{
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const label = document.createElement('label');
+      label.textContent = f.label;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = f.maxlength || 30;
+      input.value = state.values[tpl.id][f.key];
+      input.addEventListener('input', ()=>{
+        state.values[tpl.id][f.key] = input.value;
+        renderBanner(); draw();
+      });
+      wrap.appendChild(label);
+      wrap.appendChild(input);
+      dynamicFields.appendChild(wrap);
+    });
+  }
+
+  const constructionButtonsWrap = document.getElementById('constructionButtons');
+  CONSTRUCTIONS.forEach(con=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tpl-btn' + (con.id === state.constructionId ? ' active' : '');
+    btn.innerHTML = `<span class="tpl-icon"><svg viewBox="0 0 64 34" width="64" height="34">${con.svg}</svg></span><span class="tpl-label">${con.name}</span>`;
+    btn.addEventListener('click', ()=>{
+      state.constructionId = con.id;
+      constructionButtonsWrap.querySelectorAll('.tpl-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderBanner(); draw();
+    });
+    constructionButtonsWrap.appendChild(btn);
+  });
+
+  const textureButtonsWrap = document.getElementById('textureButtons');
+  TEXTURES.forEach(tex=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tpl-btn' + (tex.id === state.textureId ? ' active' : '');
+    btn.innerHTML = `<span class="tpl-icon"><svg viewBox="0 0 64 34" width="64" height="34">${tex.svg}</svg></span><span class="tpl-label">${tex.name}</span>`;
+    btn.addEventListener('click', ()=>{
+      state.textureId = tex.id;
+      textureButtonsWrap.querySelectorAll('.tpl-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderBanner(); draw();
+    });
+    textureButtonsWrap.appendChild(btn);
+  });
+
+  const templateButtonsWrap = document.getElementById('templateButtons');
+  function buildTemplateIcon(tpl){
+    const bars = tpl.icon.map(b=>`<span class="bar" style="left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;"></span>`).join('');
+    return `<span class="tpl-icon">${bars}</span>`;
+  }
+  TEMPLATES.forEach(tpl=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tpl-btn' + (tpl.id === state.templateId ? ' active' : '');
+    btn.innerHTML = `${buildTemplateIcon(tpl)}<span class="tpl-label">${tpl.name}</span>`;
+    btn.addEventListener('click', ()=>{
+      state.templateId = tpl.id;
+      templateButtonsWrap.querySelectorAll('.tpl-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderDynamicFields();
+      renderBanner(); draw();
+    });
+    templateButtonsWrap.appendChild(btn);
+  });
+  renderDynamicFields();
+
+  const fontButtonsWrap = document.getElementById('fontButtons');
+  FONTS.forEach(f=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tpl-btn' + (f.id === state.font ? ' active' : '');
+    btn.innerHTML = `<span class="tpl-icon font-icon" style="font-family:'${f.id}';font-weight:${f.weight};">${f.sample}</span><span class="tpl-label">${f.name}</span>`;
+    btn.addEventListener('click', ()=>{
+      state.font = f.id;
+      fontButtonsWrap.querySelectorAll('.tpl-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderBanner(); draw();
+    });
+    fontButtonsWrap.appendChild(btn);
+  });
+
+  document.querySelectorAll('#colorModeToggle .radio-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('#colorModeToggle .radio-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      state.colorMode = chip.dataset.mode;
+      renderBanner(); draw();
+    });
+  });
+
+  // build style swatch buttons
+  const swatchWrap = document.getElementById('styleSwatches');
+  STYLES.forEach(style=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'swatch-btn' + (style.id === state.styleId ? ' active' : '');
+    btn.dataset.style = style.id;
+    btn.innerHTML = `<span class="swatch-circle" style="background:linear-gradient(135deg, ${style.colors[0]}, ${style.colors[3]});"></span><span class="swatch-label">${style.name}</span>`;
+    btn.addEventListener('click', ()=>{
+      state.styleId = style.id;
+      swatchWrap.querySelectorAll('.swatch-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderBanner(); draw();
+    });
+    swatchWrap.appendChild(btn);
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', ()=>{
+    if(!bannerCanvas) renderBanner();
+    bannerCanvas.toBlob(blob=>{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = '紅布條.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    }, 'image/png');
+  });
+
+  window.addEventListener('resize', sizeStageCanvas);
+
+  if(document.fonts && document.fonts.ready){
+    FONTS.forEach(f => document.fonts.load(`${f.weight} 40px "${f.id}"`));
+    document.fonts.ready.then(()=>{
+      renderBanner();
+      sizeStageCanvas();
+    });
+  } else {
+    renderBanner();
+    sizeStageCanvas();
+  }
+  setTimeout(()=>{ renderBanner(); draw(); }, 400);
+
+})();
+</script>
+</body>
+</html>
