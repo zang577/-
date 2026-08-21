@@ -224,6 +224,59 @@
     font-weight:700;
   }
 
+  .custom-swatch-outer{
+    position:relative;
+    width:42px;
+    height:42px;
+    display:block;
+  }
+  .custom-color-input{
+    -webkit-appearance:none;
+    appearance:none;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    border:3px solid transparent;
+    box-shadow:0 2px 6px rgba(74,67,61,0.15);
+    padding:0;
+    cursor:pointer;
+    background:none;
+    transition:all .15s ease;
+  }
+  .custom-color-input::-webkit-color-swatch-wrapper{
+    padding:0;
+    border-radius:50%;
+    overflow:hidden;
+  }
+  .custom-color-input::-webkit-color-swatch{
+    border:none;
+    border-radius:50%;
+  }
+  .custom-color-input::-moz-color-swatch{
+    border:none;
+    border-radius:50%;
+  }
+  .swatch-btn.active .custom-color-input{
+    border-color:var(--rose-deep);
+    box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--rose-deep);
+  }
+  .custom-check{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+    opacity:0;
+    pointer-events:none;
+  }
+  .swatch-btn.active .custom-check{
+    opacity:1;
+  }
+
   .footer-note{
     margin-top:22px;
     font-size:11.5px;
@@ -418,16 +471,6 @@
       ]
     },
     {
-      id:'fourLine', name:'多行公告',
-      icon:[{x:10,y:5,w:44,h:3},{x:6,y:11,w:52,h:8},{x:10,y:22,w:44,h:3},{x:10,y:27,w:44,h:3}],
-      fields:[
-        {key:'l1', label:'第一行（選填）', maxlength:26, default:'高雄市政府教育局指導'},
-        {key:'l2', label:'第二行（主標題）', maxlength:22, default:'第37周年校慶猜謎大會'},
-        {key:'l3', label:'第三行（選填）', maxlength:26, default:'佛光山主辦'},
-        {key:'l4', label:'第四行（選填）', maxlength:26, default:'高雄市謎學研究會承辦'}
-      ]
-    },
-    {
       id:'cornerBadge', name:'角標款',
       icon:[{x:6,y:6,w:14,h:8},{x:12,y:17,w:40,h:8}],
       fields:[
@@ -439,17 +482,17 @@
       id:'leftRightInfo', name:'資訊款',
       icon:[{x:6,y:6,w:26,h:4},{x:10,y:14,w:44,h:9},{x:32,y:27,w:26,h:4}],
       fields:[
-        {key:'top', label:'頂部小字（靠左）', maxlength:30, default:'高雄市政府教育局指導 社會局指導補助'},
-        {key:'main', label:'主標題（置中）', maxlength:22, default:'普門高中第37周年校慶猜謎大會'},
-        {key:'bottom', label:'底部小字（靠右）', maxlength:30, default:'佛光山主辦 高雄市謎學研究會承辦'}
+        {key:'top', label:'頂部小字（靠左）', maxlength:30, default:'政府教育局 社會局 共同指導'},
+        {key:'main', label:'主標題（置中）', maxlength:22, default:'海塩高中第57屆校慶猜謎大會'},
+        {key:'bottom', label:'底部小字（靠右）', maxlength:30, default:'謎學研究會承辦'}
       ]
     },
     {
       id:'iconTag', name:'圖示強調款',
       icon:[{x:8,y:8,w:48,h:6},{x:8,y:20,w:8,h:8,round:true},{x:20,y:19,w:36,h:9,box:true}],
       fields:[
-        {key:'main', label:'主標題', maxlength:22, default:'修手機？在等我一下下'},
-        {key:'boxText', label:'方框內文字', maxlength:16, default:'123手機救援聯盟'}
+        {key:'main', label:'主標題', maxlength:22, default:'買手機 我這裡最便宜'},
+        {key:'boxText', label:'方框內文字', maxlength:16, default:'節省通訊行'}
       ]
     },
     {
@@ -457,8 +500,8 @@
       icon:[{x:6,y:8,w:14,h:18,star:true},{x:24,y:8,w:34,h:9},{x:24,y:20,w:30,h:6}],
       fields:[
         {key:'badge', label:'星芒徽章文字', maxlength:2, default:'賀'},
-        {key:'line1', label:'主標題', maxlength:18, default:'劉祖霖遠赴中國'},
-        {key:'line2', label:'副標題', maxlength:22, default:'為國爭光　拿麼厲害～'}
+        {key:'line1', label:'主標題', maxlength:18, default:'陳品儒勇奪冠軍'},
+        {key:'line2', label:'副標題', maxlength:22, default:'努力不懈 為國爭光'}
       ]
     }
   ];
@@ -482,16 +525,16 @@
       svg:'<rect x="4" y="6" width="56" height="22" rx="1.5" fill="#c81810"/><rect x="7" y="9" width="50" height="16" fill="none" stroke="#f4e8c8" stroke-width="1.4"/><circle cx="9" cy="10" r="2" fill="#eee"/><circle cx="55" cy="10" r="2" fill="#eee"/><path d="M9 10 L2 2" stroke="#8a7a63" stroke-width="1.6" fill="none"/><path d="M55 10 L62 2" stroke="#8a7a63" stroke-width="1.6" fill="none"/>'
     },
     {
-      id:'plain', name:'素面款', sagMult:0.35, wrinkleMult:0.45, hasFrame:false, grommets:'clean',
-      svg:'<rect x="6" y="7" width="52" height="20" rx="1.5" fill="#c81810"/>'
-    },
-    {
       id:'thinCord', name:'細繩懸吊款', sagMult:0.25, wrinkleMult:0.4, hasFrame:false, grommets:'thinCord',
       svg:'<rect x="8" y="10" width="48" height="18" rx="1" fill="#c81810"/><circle cx="12" cy="12" r="1.2" fill="#eee"/><circle cx="52" cy="12" r="1.2" fill="#eee"/><path d="M12 12 L1 1" stroke="#c9c2b0" stroke-width="1" fill="none"/><path d="M52 12 L63 1" stroke="#c9c2b0" stroke-width="1" fill="none"/>'
     },
     {
       id:'weighted', name:'垂墜配重款', sagMult:0.8, wrinkleMult:0.9, hasFrame:false, grommets:'weighted',
       svg:'<rect x="10" y="6" width="44" height="18" rx="1.5" fill="#c81810"/><circle cx="14" cy="9" r="1.6" fill="#eee"/><circle cx="50" cy="9" r="1.6" fill="#eee"/><line x1="14" y1="9" x2="9" y2="30" stroke="#c9c2b0" stroke-width="1"/><line x1="50" y1="9" x2="55" y2="30" stroke="#c9c2b0" stroke-width="1"/><rect x="6" y="28" width="6" height="9" rx="1.5" fill="#cfe8ec" fill-opacity="0.85" stroke="#8fb5ba" stroke-width="0.6"/><rect x="52" y="28" width="6" height="9" rx="1.5" fill="#cfe8ec" fill-opacity="0.85" stroke="#8fb5ba" stroke-width="0.6"/>'
+    },
+    {
+      id:'plain', name:'素面款', sagMult:0.35, wrinkleMult:0.45, hasFrame:false, grommets:'clean',
+      svg:'<rect x="6" y="7" width="52" height="20" rx="1.5" fill="#c81810"/>'
     }
   ];
 
@@ -770,10 +813,41 @@
     return c;
   }
 
+  // ---------- letter-spacing helpers (character spacing, not line spacing) ----------
+  const LETTER_SPACING_FRAC = 0.14; // extra gap between characters, as a fraction of font size
+
+  function measureSpacedWidth(g, text, spacing){
+    const chars = Array.from(text || '');
+    let w = 0;
+    chars.forEach(c => { w += g.measureText(c).width; });
+    w += spacing * Math.max(0, chars.length - 1);
+    return w;
+  }
+
+  // draws text with manual per-character spacing; x is the anchor point per `align`
+  function fillSpacedText(g, text, x, y, align, spacing){
+    const chars = Array.from(text || '');
+    const widths = chars.map(c => g.measureText(c).width);
+    const totalW = widths.reduce((a,b)=>a+b,0) + spacing*Math.max(0, chars.length-1);
+    let startX;
+    if(align === 'center') startX = x - totalW/2;
+    else if(align === 'right') startX = x - totalW;
+    else startX = x;
+    const prevAlign = g.textAlign;
+    g.textAlign = 'left';
+    let cx = startX;
+    chars.forEach((c,i) => {
+      g.fillText(c, cx, y);
+      cx += widths[i] + spacing;
+    });
+    g.textAlign = prevAlign;
+    return totalW;
+  }
+
   function fitFontSize(g, text, maxWidth, startSize, minSize, weight, family){
     let size = startSize;
     g.font = `${weight} ${size}px "${family}"`;
-    while(g.measureText(text).width > maxWidth && size > minSize){
+    while(measureSpacedWidth(g, text, size*LETTER_SPACING_FRAC) > maxWidth && size > minSize){
       size -= 3;
       g.font = `${weight} ${size}px "${family}"`;
     }
@@ -997,10 +1071,11 @@
     g.font = `${weight} ${size}px "${family}"`;
     g.textAlign = 'center';
     g.textBaseline = 'alphabetic';
+    const spacing = size * LETTER_SPACING_FRAC;
     g.fillStyle = 'rgba(0,0,0,0.30)';
-    g.fillText(text, cx, baselineY + size*0.05);
+    fillSpacedText(g, text, cx+2, baselineY + size*0.05, 'center', spacing);
     g.fillStyle = '#f7f2ec';
-    g.fillText(text, cx, baselineY);
+    fillSpacedText(g, text, cx, baselineY, 'center', spacing);
   }
 
   // measure a line's visual ascent/descent so we can center it precisely
@@ -1069,7 +1144,6 @@
     else if(tpl.id === 'twoLine') drawTwoLineTemplate(g, box, vals, family);
     else if(tpl.id === 'threeLine') drawThreeLineTemplate(g, box, vals, family);
     else if(tpl.id === 'tagLine') drawTagLineTemplate(g, box, vals, family);
-    else if(tpl.id === 'fourLine') drawFourLineTemplate(g, box, vals, family);
     else if(tpl.id === 'cornerBadge') drawCornerBadgeTemplate(g, box, vals, family);
     else if(tpl.id === 'leftRightInfo') drawLeftRightInfoTemplate(g, box, vals, family);
     else if(tpl.id === 'iconTag') drawIconTagTemplate(g, box, vals, family);
@@ -1121,8 +1195,10 @@
     // second row: magnifying-glass icon + boxed text, centered as a group
     const rowY = top + h*0.72;
     const boxSize = h*0.22;
-    g.font = `800 ${boxSize*0.62}px "${family}"`;
-    const boxTextW = g.measureText(vals.boxText || ' ').width;
+    const boxFontSize = boxSize*0.6;
+    g.font = `800 ${boxFontSize}px "${family}"`;
+    const boxSpacing = boxFontSize * LETTER_SPACING_FRAC;
+    const boxTextW = measureSpacedWidth(g, vals.boxText, boxSpacing);
     const boxPadX = boxSize*0.38;
     const boxW = Math.min(w*0.7, boxTextW + boxPadX*2);
     const iconR = boxSize*0.34;
@@ -1138,9 +1214,9 @@
     roundRectPath(g, x, rowY-boxSize/2, boxW, boxSize, boxSize*0.14);
     g.stroke();
     g.fillStyle = '#ffffff';
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.font = `800 ${boxSize*0.6}px "${family}"`;
-    g.fillText(vals.boxText, x+boxW/2, rowY + boxSize*0.03);
+    g.textBaseline = 'middle';
+    g.font = `800 ${boxFontSize}px "${family}"`;
+    fillSpacedText(g, vals.boxText, x+boxW/2, rowY + boxSize*0.03, 'center', boxSpacing);
   }
 
   function drawStarburstTemplate(g, box, vals, family){
@@ -1206,14 +1282,15 @@
     const style = currentStyle();
 
     function measureAt(size){
+      const spacing = size*LETTER_SPACING_FRAC;
       g.font = `800 ${size}px "${family}"`;
-      const tagTextW = g.measureText(vals.tag || ' ').width;
+      const tagTextW = measureSpacedWidth(g, vals.tag, spacing);
       const tagPad = size*0.35;
       const tagW = tagTextW + tagPad*2;
       g.font = `900 ${size}px "${family}"`;
-      const textW = g.measureText(vals.text || ' ').width;
+      const textW = measureSpacedWidth(g, vals.text, spacing);
       const gap = size*0.4;
-      return { tagW, textW, gap, total: tagW+gap+textW };
+      return { tagW, textW, gap, total: tagW+gap+textW, spacing };
     }
     let size = h*0.34;
     let met = measureAt(size);
@@ -1230,8 +1307,8 @@
     g.fill();
     g.font = `800 ${size}px "${family}"`;
     g.fillStyle = style.colors[2];
-    g.textAlign = 'left'; g.textBaseline = 'middle';
-    g.fillText(vals.tag, startX + (met.tagW - g.measureText(vals.tag).width)/2, centerY + size*0.03);
+    g.textBaseline = 'middle';
+    fillSpacedText(g, vals.tag, startX + met.tagW/2, centerY + size*0.03, 'center', met.spacing);
 
     // main text
     g.font = `900 ${size}px "${family}"`;
@@ -1239,36 +1316,10 @@
     const mMain = measureLine(g, vals.text, 900, size, family);
     const baseline = centerY + (mMain.ascent - mMain.descent)/2;
     const textX = startX + met.tagW + met.gap;
-    g.textAlign = 'left';
     g.fillStyle = 'rgba(0,0,0,0.3)';
-    g.fillText(vals.text, textX+2, baseline + size*0.05);
+    fillSpacedText(g, vals.text, textX+2, baseline + size*0.05, 'left', met.spacing);
     g.fillStyle = '#ffffff';
-    g.fillText(vals.text, textX, baseline);
-  }
-
-  function drawFourLineTemplate(g, box, vals, family){
-    const {left,top,right,bottom} = box;
-    const w = right-left, h = bottom-top;
-    const maxTextWidth = w*0.88;
-    const cx = (left+right)/2, centerY = (top+bottom)/2;
-    const specs = [
-      {key:'l1', weight:700, maxF:0.15, minF:0.06},
-      {key:'l2', weight:900, maxF:0.28, minF:0.12},
-      {key:'l3', weight:700, maxF:0.14, minF:0.06},
-      {key:'l4', weight:700, maxF:0.14, minF:0.06}
-    ];
-    const active = specs.filter(s => vals[s.key] && vals[s.key].trim().length>0);
-    if(active.length===0) return;
-    const sizes = active.map(s => fitFontSize(g, vals[s.key], maxTextWidth, h*s.maxF, h*s.minF, s.weight, family));
-    const metrics = active.map((s,i) => measureLine(g, vals[s.key], s.weight, sizes[i], family));
-    const gapY = h*0.035;
-    const blockH = metrics.reduce((sum,m)=>sum+m.ascent+m.descent,0) + gapY*(active.length-1);
-    let cursor = centerY - blockH/2;
-    active.forEach((s,i) => {
-      const baseline = cursor + metrics[i].ascent;
-      drawTextLine(g, vals[s.key], cx, baseline, s.weight, sizes[i], family);
-      cursor += metrics[i].ascent + metrics[i].descent + gapY;
-    });
+    fillSpacedText(g, vals.text, textX, baseline, 'left', met.spacing);
   }
 
   function drawCornerBadgeTemplate(g, box, vals, family){
@@ -1276,25 +1327,26 @@
     const w = right-left, h = bottom-top;
     const style = currentStyle();
 
-    // badge in the top-left corner, sized/positioned to clear any construction hardware
-    // (grommets, ropes, ties) that may sit in that corner
-    const badgeSize = h*0.20;
-    g.font = `800 ${badgeSize*0.62}px "${family}"`;
-    const badgeTextW = g.measureText(vals.badge || ' ').width;
+    // small badge tucked in the top-left, clear of any construction hardware in that corner
+    const badgeSize = h*0.15;
+    const badgeFontSize = badgeSize*0.62;
+    g.font = `800 ${badgeFontSize}px "${family}"`;
+    const badgeSpacing = badgeFontSize * LETTER_SPACING_FRAC;
+    const badgeTextW = measureSpacedWidth(g, vals.badge, badgeSpacing);
     const bw = Math.max(badgeSize, badgeTextW + badgeSize*0.5);
-    const bx = left + w*0.07, by = top + h*0.18;
+    const bx = left + w*0.065, by = top + h*0.12;
     g.fillStyle = '#ffffff';
     roundRectPath(g, bx, by, bw, badgeSize, badgeSize*0.16);
     g.fill();
     g.fillStyle = style.colors[2];
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(vals.badge, bx+bw/2, by+badgeSize/2 + badgeSize*0.02);
+    g.textBaseline = 'middle';
+    fillSpacedText(g, vals.badge, bx+bw/2, by+badgeSize/2 + badgeSize*0.02, 'center', badgeSpacing);
 
-    // main title, in the lower portion of the banner — kept clear of the badge above
-    // regardless of how long the title is, rather than sharing the exact vertical centre
+    // main title, kept at the true vertical centre of the banner (the badge above is
+    // small and high enough to stay clear of it)
     const maxTextWidth = w*0.86;
-    const cx = (left+right)/2, titleCenterY = top + h*0.66;
-    const s1 = fitFontSize(g, vals.main, maxTextWidth, h*0.32, h*0.13, 900, family);
+    const cx = (left+right)/2, titleCenterY = (top+bottom)/2;
+    const s1 = fitFontSize(g, vals.main, maxTextWidth, h*0.36, h*0.14, 900, family);
     const m1 = measureLine(g, vals.main, 900, s1, family);
     const baseline = titleCenterY + (m1.ascent - m1.descent)/2;
     drawTextLine(g, vals.main, cx, baseline, 900, s1, family);
@@ -1308,35 +1360,36 @@
 
     // top small, left aligned
     const topSize = fitFontSize(g, vals.top, w*0.84, h*0.135, h*0.055, 700, family);
+    const topSpacing = topSize * LETTER_SPACING_FRAC;
     const topBaseline = top + h*0.22;
-    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    g.textBaseline = 'alphabetic';
     g.font = `700 ${topSize}px "${family}"`;
     g.fillStyle = 'rgba(0,0,0,0.30)';
-    g.fillText(vals.top, left+padX+2, topBaseline + topSize*0.05);
+    fillSpacedText(g, vals.top, left+padX+2, topBaseline + topSize*0.05, 'left', topSpacing);
     g.fillStyle = '#f7f2ec';
-    g.fillText(vals.top, left+padX, topBaseline);
+    fillSpacedText(g, vals.top, left+padX, topBaseline, 'left', topSpacing);
 
     // main headline, centered, bold and large
     const mainSize = fitFontSize(g, vals.main, w*0.84, h*0.40, h*0.15, 900, family);
+    const mainSpacing = mainSize * LETTER_SPACING_FRAC;
     const mMain = measureLine(g, vals.main, 900, mainSize, family);
     const mainBaseline = centerY + (mMain.ascent - mMain.descent)/2 + h*0.02;
-    g.textAlign = 'center';
     g.font = `900 ${mainSize}px "${family}"`;
     g.fillStyle = 'rgba(0,0,0,0.32)';
-    g.fillText(vals.main, (left+right)/2+3, mainBaseline + mainSize*0.045);
+    fillSpacedText(g, vals.main, (left+right)/2+3, mainBaseline + mainSize*0.045, 'center', mainSpacing);
     g.fillStyle = '#ffffff';
-    g.fillText(vals.main, (left+right)/2, mainBaseline);
+    fillSpacedText(g, vals.main, (left+right)/2, mainBaseline, 'center', mainSpacing);
 
     // bottom small, right aligned
     const botSize = fitFontSize(g, vals.bottom, w*0.6, h*0.12, h*0.05, 700, family);
+    const botSpacing = botSize * LETTER_SPACING_FRAC;
     const mBot = measureLine(g, vals.bottom, 700, botSize, family);
     const botBaseline = bottom - h*0.10 - mBot.descent;
-    g.textAlign = 'right';
     g.font = `700 ${botSize}px "${family}"`;
     g.fillStyle = 'rgba(0,0,0,0.28)';
-    g.fillText(vals.bottom, right-padX+2, botBaseline + botSize*0.05);
+    fillSpacedText(g, vals.bottom, right-padX+2, botBaseline + botSize*0.05, 'right', botSpacing);
     g.fillStyle = '#f7f2ec';
-    g.fillText(vals.bottom, right-padX, botBaseline);
+    fillSpacedText(g, vals.bottom, right-padX, botBaseline, 'right', botSpacing);
   }
 
   function renderBanner(){
@@ -1576,42 +1629,60 @@
     btn.addEventListener('click', ()=>{
       state.styleId = style.id;
       swatchWrap.querySelectorAll('.swatch-btn').forEach(b=>b.classList.remove('active'));
-      customBtn.classList.remove('active');
       btn.classList.add('active');
       renderBanner(); draw();
     });
     swatchWrap.appendChild(btn);
   });
 
-  // custom colour swatch — a <label for> reliably opens the native colour picker across
-  // browsers (including Safari, which does not reliably forward a synthetic .click() to a
-  // color input nested inside a <button>). The <input type="color"> is a sibling, not
-  // nested inside the label's interactive wrapper, keeping the markup valid everywhere.
+  // custom colour swatch — the native colour input itself IS the circle (via
+  // -webkit-appearance:none + border-radius on the input and its swatch pseudo-elements).
+  // This avoids the cross-browser unreliability of hiding a color input behind another
+  // element and forwarding clicks to it (which Safari in particular does not do well).
+  const customWrap = document.createElement('div');
+  customWrap.className = 'swatch-btn' + (state.styleId === 'custom' ? ' active' : '');
+
+  const customOuter = document.createElement('span');
+  customOuter.className = 'custom-swatch-outer';
+
   const customInput = document.createElement('input');
   customInput.type = 'color';
   customInput.id = 'customColorInput';
+  customInput.className = 'custom-color-input';
   customInput.value = state.customColor;
-  customInput.style.cssText = 'position:absolute; width:1px; height:1px; opacity:0; border:0; padding:0; margin:-1px; overflow:hidden;';
 
-  const customBtn = document.createElement('label');
-  customBtn.setAttribute('for', 'customColorInput');
-  customBtn.className = 'swatch-btn' + (state.styleId === 'custom' ? ' active' : '');
-  function customSwatchBg(){
-    return state.styleId === 'custom'
-      ? state.customColor
-      : 'conic-gradient(from 0deg, #ff3b28, #ffce4d, #3bd671, #3ba3ff, #b13bff, #ff3b28)';
+  const customCheck = document.createElement('span');
+  customCheck.className = 'custom-check';
+  customCheck.textContent = '✓';
+
+  customOuter.appendChild(customInput);
+  customOuter.appendChild(customCheck);
+
+  const customLabelSpan = document.createElement('span');
+  customLabelSpan.className = 'swatch-label';
+  customLabelSpan.textContent = '自訂';
+
+  customWrap.appendChild(customOuter);
+  customWrap.appendChild(customLabelSpan);
+
+  function applyCustomSwatchColor(){
+    // same 135deg two-tone gradient treatment as the preset swatches, so the custom
+    // button looks visually identical to the others rather than a distinct "picker" icon
+    const light = shadeHex(state.customColor, 0.12);
+    const dark = shadeHex(state.customColor, -0.22);
+    customInput.style.background = `linear-gradient(135deg, ${light}, ${dark})`;
   }
-  customBtn.innerHTML = `<span class="swatch-circle" id="customSwatchCircle" style="background:${customSwatchBg()};"></span><span class="swatch-label">自訂</span>`;
+  applyCustomSwatchColor();
+
   customInput.addEventListener('input', ()=>{
     state.customColor = customInput.value;
     state.styleId = 'custom';
     swatchWrap.querySelectorAll('.swatch-btn').forEach(b=>b.classList.remove('active'));
-    customBtn.classList.add('active');
-    document.getElementById('customSwatchCircle').style.background = customSwatchBg();
+    customWrap.classList.add('active');
+    applyCustomSwatchColor();
     renderBanner(); draw();
   });
-  swatchWrap.appendChild(customBtn);
-  swatchWrap.appendChild(customInput);
+  swatchWrap.appendChild(customWrap);
 
   document.getElementById('downloadBtn').addEventListener('click', ()=>{
     if(!bannerCanvas) renderBanner();
