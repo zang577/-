@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>紅布條</title>
+<title>紅布條產生器</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Taipei+Sans+TC+Beta:wght@400;700;900&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+HK:wght@400;700;900&family=Klee+One:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -393,8 +393,8 @@
     </div>
 
     <button class="btn" id="downloadBtn" style="width:100%;">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M12 15l-4-4M12 15l4-4"/><path d="M4 19h16"/></svg>
-      下載圖片
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-3.8M8.6 13.5l6.8 3.8"/></svg>
+      分享 / 儲存圖片
     </button>
   </div>
 </div>
@@ -1686,14 +1686,45 @@
 
   document.getElementById('downloadBtn').addEventListener('click', ()=>{
     if(!bannerCanvas) renderBanner();
-    bannerCanvas.toBlob(blob=>{
+    const fileName = '紅布條.png';
+
+    function fallbackDownload(blob){
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = '紅布條.png';
+      a.href = url; a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    }
+
+    bannerCanvas.toBlob(async (blob)=>{
+      if(!blob) return;
+
+      // Prefer the Web Share API with a file attachment — on mobile this opens the
+      // native share sheet, letting the person save straight into their photo album
+      // (or send via any app) instead of dropping the file into a browser Downloads folder.
+      let file = null;
+      try { file = new File([blob], fileName, { type: 'image/png' }); } catch(e) { /* File constructor unsupported */ }
+
+      const canWebShareFiles = file && typeof navigator !== 'undefined'
+        && typeof navigator.share === 'function'
+        && typeof navigator.canShare === 'function'
+        && navigator.canShare({ files: [file] });
+
+      if(canWebShareFiles){
+        try{
+          await navigator.share({ files: [file], title: '紅布條' });
+          return;
+        }catch(err){
+          if(err && err.name === 'AbortError') return; // person cancelled the share sheet — do nothing
+          fallbackDownload(blob); // share failed for some other reason — fall back to a normal download
+          return;
+        }
+      }
+
+      // Web Share (file) API not available on this browser/device — fall back to a normal download
+      fallbackDownload(blob);
     }, 'image/png');
   });
 
