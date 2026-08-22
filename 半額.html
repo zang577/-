@@ -211,6 +211,9 @@
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     下載圖片
   </button>
+  <p style="font-size: 11px; color: var(--ink-soft); margin: 6px 0 0; text-align: center;">
+    Safari 若跳出分享選單請選「儲存影像」；若開新分頁顯示圖片，請長按圖片選「加入照片」
+  </p>
 </div>
 
 <div class="content">
@@ -398,12 +401,37 @@
     });
   }
 
-  function downloadImage() {
-    const link = document.createElement("a");
+  async function downloadImage() {
     const firstLine = (textInput.value || "sticker").split("\n")[0];
-    link.download = `貼紙-${firstLine}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    const filename = `貼紙-${firstLine}.png`;
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+
+      // Safari (especially iOS) ignores the <a download> attribute for
+      // data/blob URIs, so a plain link-click "download" silently fails
+      // or just opens the image. The Web Share API is what actually lets
+      // people save the PNG to Photos on Safari.
+      const file = new File([blob], filename, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          return;
+        } catch (err) {
+          // user cancelled the share sheet, or share failed — fall through
+        }
+      }
+
+      // Fallback: open the image in a new tab. On Safari this lets people
+      // long-press the image and choose "Add to Photos" / "Save Image".
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, "_blank");
+      if (!win) {
+        // Pop-up blocked — navigate this tab instead.
+        window.location.href = url;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, "image/png");
   }
 
   // Wire up events
