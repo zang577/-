@@ -1,102 +1,346 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Download } from "lucide-react";
-
-// ---------- Morandi palette (for the UI chrome) ----------
-const MORANDI = {
-  bg: "#FFFFFF",
-  panel: "#FAF9F7",
-  panelBorder: "#E7E2DB",
-  ink: "#4A4640",
-  inkSoft: "#8B8479",
-  taupe: "#B7A99A",
-};
-
-// Colors calibrated by sampling the reference "半額" sticker:
-// outer circle #FF0000, star fill #FFFF00, text #FF0000
-const PRESETS = [
-  { name: "經典", outer: "#FF0000", inner: "#FFFF00", text: "#FF0000" },
-  { name: "墨色", outer: "#4A4640", inner: "#EDEAE3", text: "#3A3630" },
-];
-
-const FONT_FAMILY = '"Noto Sans TC", "Noto Sans JP", sans-serif';
-const CANVAS_SIZE = 800;
-
-function loadFont() {
-  if (document.getElementById("sticker-font-link")) return;
-  const link = document.createElement("link");
-  link.id = "sticker-font-link";
-  link.rel = "stylesheet";
-  link.href =
-    "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&family=Noto+Sans+JP:wght@700;900&display=swap";
-  document.head.appendChild(link);
-}
-
-// Alternating-radius star/burst polygon path
-function starPath(ctx, cx, cy, points, outerR, innerR, rotation = 0) {
-  const step = Math.PI / points;
-  ctx.beginPath();
-  for (let i = 0; i < points * 2; i++) {
-    const r = i % 2 === 0 ? outerR : innerR;
-    const angle = i * step + rotation;
-    const x = cx + r * Math.sin(angle);
-    const y = cy - r * Math.cos(angle);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>特價貼紙產生器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&family=Noto+Sans+JP:wght@700;900&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --panel: #FAF9F7;
+    --panel-border: #E7E2DB;
+    --ink: #4A4640;
+    --ink-soft: #8B8479;
+    --taupe: #B7A99A;
   }
-  ctx.closePath();
-}
 
-function wrapAndFit(ctx, text, maxWidth, maxHeight, weight = 900) {
-  const lines = text.split("\n").filter((l) => l.length > 0);
-  if (lines.length === 0) lines.push("");
-  const lineCount = lines.length;
-  let fontSize = 40;
+  * { box-sizing: border-box; }
 
-  for (let size = Math.floor((maxHeight / lineCount) * 1.4); size > 8; size -= 2) {
-    ctx.font = `${weight} ${size}px ${FONT_FAMILY}`;
-    const widths = lines.map((l) => ctx.measureText(l).width);
-    const widestOk = Math.max(...widths) <= maxWidth;
-    const totalHeight = size * 1.15 * lineCount;
-    fontSize = size;
-    if (widestOk && totalHeight <= maxHeight) break;
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans TC", "Noto Sans JP", sans-serif;
   }
-  return { fontSize, lines };
-}
 
-function Sticker() {
-  const canvasRef = useRef(null);
-  const [fontReady, setFontReady] = useState(false);
+  .preview-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 20px 8px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--panel-border);
+  }
 
-  const [text, setText] = useState("半額");
-  const [outerColor, setOuterColor] = useState(PRESETS[0].outer);
-  const [innerColor, setInnerColor] = useState(PRESETS[0].inner);
-  const [textColor, setTextColor] = useState(PRESETS[0].text);
+  .preview-frame {
+    width: 96px;
+    height: 96px;
+    border-radius: 9999px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background-image: repeating-conic-gradient(#EFEBE4 0% 25%, #FAF9F7 0% 50%);
+    background-size: 16px 16px;
+    border: 1px solid var(--panel-border);
+  }
 
-  // Shape params calibrated from the reference image:
-  // 20-point star, tip almost touching the circle edge, valley ~76% of circle radius
-  const [points, setPoints] = useState(20);
-  const [tipMargin, setTipMargin] = useState(6); // % gap between star tip and circle edge
-  const [valleyRatio, setValleyRatio] = useState(76); // % of circle radius for star valley depth
+  #stickerCanvas {
+    width: 96px;
+    height: 96px;
+    display: block;
+  }
 
-  useEffect(() => {
-    loadFont();
-    Promise.all([
-      document.fonts.load(`900 100px ${FONT_FAMILY}`),
-      document.fonts.load(`700 100px ${FONT_FAMILY}`),
-    ])
-      .then(() => setFontReady(true))
-      .catch(() => setFontReady(true));
-  }, []);
+  .download-btn {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--taupe);
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    font-family: inherit;
+  }
+  .download-btn:hover { opacity: 0.9; }
 
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+  .content {
+    max-width: 768px;
+    margin: 0 auto;
+    padding: 24px 20px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .field { margin-bottom: 24px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label.field-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  textarea#textInput {
+    width: 100%;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 16px;
+    resize: none;
+    outline: none;
+    background: #fff;
+    border: 1px solid var(--panel-border);
+    color: var(--ink);
+    font-family: inherit;
+  }
+
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .preset-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    background: #fff;
+    border: 1px solid var(--panel-border);
+    color: var(--ink);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    font-family: inherit;
+    transition: background 0.15s ease;
+  }
+  .preset-btn:hover { background: #F1EDE6; }
+
+  .preset-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 9999px;
+    margin-right: 6px;
+  }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .color-field label {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+
+  .color-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid var(--panel-border);
+  }
+
+  .color-box input[type="color"] {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    background: none;
+  }
+
+  .color-box span {
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .slider-field { margin-bottom: 24px; }
+  .slider-field:last-child { margin-bottom: 0; }
+
+  .slider-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .slider-head .val { color: var(--ink-soft); }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--taupe);
+  }
+</style>
+</head>
+<body>
+
+<div class="preview-bar">
+  <div class="preview-frame">
+    <canvas id="stickerCanvas" width="800" height="800"></canvas>
+  </div>
+  <button class="download-btn" id="downloadBtn">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    下載圖片
+  </button>
+</div>
+
+<div class="content">
+  <div class="panel">
+
+    <div class="field">
+      <label class="field-label" for="textInput">貼紙文字</label>
+      <textarea id="textInput" rows="2" placeholder="例如：特價 / 半額">半額</textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label">快速樣式</label>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div class="field color-grid">
+      <div class="color-field">
+        <label>外圈色</label>
+        <div class="color-box">
+          <input type="color" id="outerColor" value="#FF0000" />
+          <span id="outerColorText">#FF0000</span>
+        </div>
+      </div>
+      <div class="color-field">
+        <label>星形底色</label>
+        <div class="color-box">
+          <input type="color" id="innerColor" value="#FFFF00" />
+          <span id="innerColorText">#FFFF00</span>
+        </div>
+      </div>
+      <div class="color-field">
+        <label>文字色</label>
+        <div class="color-box">
+          <input type="color" id="textColor" value="#FF0000" />
+          <span id="textColorText">#FF0000</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-head"><span>爆炸角數</span><span class="val" id="pointsVal">20 角</span></div>
+      <input type="range" id="pointsSlider" min="10" max="28" value="20" />
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-head"><span>尖角外露邊框</span><span class="val" id="tipVal">6%</span></div>
+      <input type="range" id="tipSlider" min="0" max="20" value="6" />
+    </div>
+
+    <div class="slider-field">
+      <div class="slider-head"><span>星形凹陷深度</span><span class="val" id="valleyVal">76%</span></div>
+      <input type="range" id="valleySlider" min="50" max="90" value="76" />
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const FONT_FAMILY = '"Noto Sans TC", "Noto Sans JP", sans-serif';
+  const CANVAS_SIZE = 800;
+
+  const PRESETS = [
+    { name: "經典", outer: "#FF0000", inner: "#FFFF00", text: "#FF0000" },
+    { name: "墨色", outer: "#4A4640", inner: "#EDEAE3", text: "#3A3630" },
+  ];
+
+  const canvas = document.getElementById("stickerCanvas");
+  const ctx = canvas.getContext("2d");
+
+  const textInput = document.getElementById("textInput");
+  const outerColorInput = document.getElementById("outerColor");
+  const innerColorInput = document.getElementById("innerColor");
+  const textColorInput = document.getElementById("textColor");
+  const outerColorText = document.getElementById("outerColorText");
+  const innerColorText = document.getElementById("innerColorText");
+  const textColorText = document.getElementById("textColorText");
+
+  const pointsSlider = document.getElementById("pointsSlider");
+  const tipSlider = document.getElementById("tipSlider");
+  const valleySlider = document.getElementById("valleySlider");
+  const pointsVal = document.getElementById("pointsVal");
+  const tipVal = document.getElementById("tipVal");
+  const valleyVal = document.getElementById("valleyVal");
+
+  // Alternating-radius star/burst polygon path
+  function starPath(cx, cy, points, outerR, innerR, rotation = 0) {
+    const step = Math.PI / points;
+    ctx.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+      const r = i % 2 === 0 ? outerR : innerR;
+      const angle = i * step + rotation;
+      const x = cx + r * Math.sin(angle);
+      const y = cy - r * Math.cos(angle);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  }
+
+  function wrapAndFit(text, maxWidth, maxHeight, weight = 900) {
+    const lines = text.split("\n").filter((l) => l.length > 0);
+    if (lines.length === 0) lines.push("");
+    const lineCount = lines.length;
+    let fontSize = 40;
+
+    for (let size = Math.floor((maxHeight / lineCount) * 1.4); size > 8; size -= 2) {
+      ctx.font = `${weight} ${size}px ${FONT_FAMILY}`;
+      const widths = lines.map((l) => ctx.measureText(l).width);
+      const widestOk = Math.max(...widths) <= maxWidth;
+      const totalHeight = size * 1.15 * lineCount;
+      fontSize = size;
+      if (widestOk && totalHeight <= maxHeight) break;
+    }
+    return { fontSize, lines };
+  }
+
+  function draw() {
     ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     const cx = CANVAS_SIZE / 2;
     const cy = CANVAS_SIZE / 2;
     const circleR = CANVAS_SIZE * 0.49;
+
+    const outerColor = outerColorInput.value;
+    const innerColor = innerColorInput.value;
+    const textColor = textColorInput.value;
+    const points = Number(pointsSlider.value);
+    const tipMargin = Number(tipSlider.value);
+    const valleyRatio = Number(valleySlider.value);
+    const text = textInput.value;
 
     // 1. Smooth outer circle
     ctx.fillStyle = outerColor;
@@ -108,14 +352,14 @@ function Sticker() {
     const tipR = circleR * (1 - tipMargin / 100);
     const valleyR = circleR * (valleyRatio / 100);
     ctx.fillStyle = innerColor;
-    starPath(ctx, cx, cy, points, tipR, valleyR, 0);
+    starPath(cx, cy, points, tipR, valleyR, 0);
     ctx.fill();
 
     // 3. Text, sized to fit inside the star's valley circle
     const safeRadius = valleyR * 0.96;
     const maxWidth = safeRadius * 1.75;
     const maxHeight = safeRadius * 1.55;
-    const { fontSize, lines } = wrapAndFit(ctx, text || "", maxWidth, maxHeight, 900);
+    const { fontSize, lines } = wrapAndFit(text || "", maxWidth, maxHeight, 900);
 
     ctx.font = `900 ${fontSize}px ${FONT_FAMILY}`;
     ctx.fillStyle = textColor;
@@ -127,195 +371,76 @@ function Sticker() {
     lines.forEach((line, i) => {
       ctx.fillText(line, cx, startY + i * lineHeight);
     });
-  }, [text, outerColor, innerColor, textColor, points, tipMargin, valleyRatio]);
+  }
 
-  useEffect(() => {
-    if (fontReady) draw();
-  }, [fontReady, draw]);
+  function applyPreset(p) {
+    outerColorInput.value = p.outer;
+    innerColorInput.value = p.inner;
+    textColorInput.value = p.text;
+    syncColorLabels();
+    draw();
+  }
 
-  const applyPreset = (p) => {
-    setOuterColor(p.outer);
-    setInnerColor(p.inner);
-    setTextColor(p.text);
-  };
+  function syncColorLabels() {
+    outerColorText.textContent = outerColorInput.value.toUpperCase();
+    innerColorText.textContent = innerColorInput.value.toUpperCase();
+    textColorText.textContent = textColorInput.value.toUpperCase();
+  }
 
-  const handleDownload = () => {
-    const canvas = canvasRef.current;
+  function buildPresets() {
+    const container = document.getElementById("presets");
+    PRESETS.forEach((p) => {
+      const btn = document.createElement("button");
+      btn.className = "preset-btn";
+      btn.innerHTML = `<span class="preset-dot" style="background:${p.outer}"></span>${p.name}`;
+      btn.addEventListener("click", () => applyPreset(p));
+      container.appendChild(btn);
+    });
+  }
+
+  function downloadImage() {
     const link = document.createElement("a");
-    link.download = `貼紙-${(text || "sticker").split("\n")[0]}.png`;
+    const firstLine = (textInput.value || "sticker").split("\n")[0];
+    link.download = `貼紙-${firstLine}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
-  };
+  }
 
-  return (
-    <div
-      className="min-h-screen w-full"
-      style={{ background: MORANDI.bg, fontFamily: FONT_FAMILY, color: MORANDI.ink }}
-    >
-      {/* Preview — sticky at top so it stays visible while scrolling */}
-      <div
-        className="sticky top-0 z-20 flex flex-col items-center pt-3 pb-2 px-5"
-        style={{
-          background: MORANDI.bg,
-          borderBottom: `1px solid ${MORANDI.panelBorder}`,
-        }}
-      >
-        <div
-          className="rounded-full flex items-center justify-center overflow-hidden shrink-0"
-          style={{
-            width: 96,
-            height: 96,
-            backgroundImage: "repeating-conic-gradient(#EFEBE4 0% 25%, #FAF9F7 0% 50%)",
-            backgroundSize: "16px 16px",
-            border: `1px solid ${MORANDI.panelBorder}`,
-          }}
-        >
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_SIZE}
-            height={CANVAS_SIZE}
-            style={{ width: 96, height: 96, display: "block" }}
-          />
-        </div>
-        <button
-          onClick={handleDownload}
-          className="mt-2 flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-4 text-sm font-medium text-white transition"
-          style={{ background: MORANDI.taupe }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = 0.9)}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = 1)}
-        >
-          <Download size={14} />
-          下載圖片
-        </button>
-      </div>
+  // Wire up events
+  textInput.addEventListener("input", draw);
+  [outerColorInput, innerColorInput, textColorInput].forEach((el) => {
+    el.addEventListener("input", () => {
+      syncColorLabels();
+      draw();
+    });
+  });
+  pointsSlider.addEventListener("input", () => {
+    pointsVal.textContent = `${pointsSlider.value} 角`;
+    draw();
+  });
+  tipSlider.addEventListener("input", () => {
+    tipVal.textContent = `${tipSlider.value}%`;
+    draw();
+  });
+  valleySlider.addEventListener("input", () => {
+    valleyVal.textContent = `${valleySlider.value}%`;
+    draw();
+  });
+  document.getElementById("downloadBtn").addEventListener("click", downloadImage);
 
-      <div className="max-w-3xl mx-auto px-5 py-6">
-        {/* Controls */}
-        <div
-          className="rounded-2xl p-5 space-y-6"
-          style={{ background: MORANDI.panel, border: `1px solid ${MORANDI.panelBorder}` }}
-        >
-          <div>
-            <label className="block text-sm font-medium mb-2">貼紙文字</label>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={2}
-              placeholder="例如：特價 / 半額"
-              className="w-full rounded-xl px-3 py-2 text-base resize-none outline-none"
-              style={{
-                background: "#fff",
-                border: `1px solid ${MORANDI.panelBorder}`,
-                color: MORANDI.ink,
-              }}
-            />
-          </div>
+  buildPresets();
+  syncColorLabels();
 
-          <div>
-            <label className="block text-sm font-medium mb-2">快速樣式</label>
-            <div className="flex flex-wrap gap-2">
-              {PRESETS.map((p) => (
-                <button
-                  key={p.name}
-                  onClick={() => applyPreset(p)}
-                  className="text-xs px-3 py-1.5 rounded-full transition"
-                  style={{
-                    background: "#fff",
-                    border: `1px solid ${MORANDI.panelBorder}`,
-                    color: MORANDI.ink,
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#F1EDE6")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-                >
-                  <span
-                    className="inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle"
-                    style={{ background: p.outer }}
-                  />
-                  {p.name}
-                </button>
-              ))}
-            </div>
-          </div>
+  // Ensure the web font is fully loaded before the first draw so text
+  // renders identically across devices/browsers instead of falling back
+  // to a system font on the first paint.
+  Promise.all([
+    document.fonts.load(`900 100px ${FONT_FAMILY}`),
+    document.fonts.load(`700 100px ${FONT_FAMILY}`),
+  ])
+    .then(draw)
+    .catch(draw);
+</script>
 
-          <div className="grid grid-cols-3 gap-3">
-            <ColorField label="外圈色" value={outerColor} onChange={setOuterColor} />
-            <ColorField label="星形底色" value={innerColor} onChange={setInnerColor} />
-            <ColorField label="文字色" value={textColor} onChange={setTextColor} />
-          </div>
-
-          <SliderField
-            label="爆炸角數"
-            value={points}
-            min={10}
-            max={28}
-            onChange={setPoints}
-            display={`${points} 角`}
-          />
-          <SliderField
-            label="尖角外露邊框"
-            value={tipMargin}
-            min={0}
-            max={20}
-            onChange={setTipMargin}
-            display={`${tipMargin}%`}
-          />
-          <SliderField
-            label="星形凹陷深度"
-            value={valleyRatio}
-            min={50}
-            max={90}
-            onChange={setValleyRatio}
-            display={`${valleyRatio}%`}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ColorField({ label, value, onChange }) {
-  return (
-    <div>
-      <label className="block text-xs mb-1" style={{ color: MORANDI.inkSoft }}>
-        {label}
-      </label>
-      <div
-        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5"
-        style={{ background: "#fff", border: `1px solid ${MORANDI.panelBorder}` }}
-      >
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-6 h-6 rounded cursor-pointer"
-          style={{ border: "none", background: "none", padding: 0 }}
-        />
-        <span className="text-xs" style={{ color: MORANDI.inkSoft }}>
-          {value}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function SliderField({ label, value, min, max, onChange, display }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between text-sm mb-1.5">
-        <span className="font-medium">{label}</span>
-        <span style={{ color: MORANDI.inkSoft }}>{display}</span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full"
-        style={{ accentColor: MORANDI.taupe }}
-      />
-    </div>
-  );
-}
-
-export default Sticker;
+</body>
+</html>
