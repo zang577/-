@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>紅布條產生器</title>
+<title>紅布條</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Taipei+Sans+TC+Beta:wght@400;700;900&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+HK:wght@400;700;900&family=Klee+One:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -393,7 +393,6 @@
     </div>
 
     <button class="btn" id="downloadBtn" style="width:100%;">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-3.8M8.6 13.5l6.8 3.8"/></svg>
       下載圖片
     </button>
   </div>
@@ -1194,7 +1193,7 @@
     starburstPath(g, cx, cy, rOuter, rInner, 9);
     g.fillStyle = '#ffffff';
     g.fill();
-    const size = rOuter*0.62;
+    const size = rOuter*0.86;
     const m = measureLine(g, badgeText, 900, size, family);
     g.font = `900 ${size}px "${family}"`;
     g.fillStyle = textColor;
