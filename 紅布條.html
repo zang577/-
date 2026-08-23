@@ -394,7 +394,7 @@
 
     <button class="btn" id="downloadBtn" style="width:100%;">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-3.8M8.6 13.5l6.8 3.8"/></svg>
-      分享 / 儲存圖片
+      下載圖片
     </button>
   </div>
 </div>
@@ -496,7 +496,15 @@
       ]
     },
     {
-      id:'starburst', name:'爆炸賀報款',
+      id:'starburstSingle', name:'賀報款',
+      icon:[{x:6,y:8,w:14,h:18,star:true},{x:24,y:14,w:34,h:8}],
+      fields:[
+        {key:'badge', label:'星芒徽章文字', maxlength:2, default:'賀'},
+        {key:'line1', label:'主標題', maxlength:18, default:'陳品儒勇奪冠軍'}
+      ]
+    },
+    {
+      id:'starburst', name:'賀報雙行',
       icon:[{x:6,y:8,w:14,h:18,star:true},{x:24,y:8,w:34,h:9},{x:24,y:20,w:30,h:6}],
       fields:[
         {key:'badge', label:'星芒徽章文字', maxlength:2, default:'賀'},
@@ -1147,6 +1155,7 @@
     else if(tpl.id === 'cornerBadge') drawCornerBadgeTemplate(g, box, vals, family);
     else if(tpl.id === 'leftRightInfo') drawLeftRightInfoTemplate(g, box, vals, family);
     else if(tpl.id === 'iconTag') drawIconTagTemplate(g, box, vals, family);
+    else if(tpl.id === 'starburstSingle') drawStarburstSingleTemplate(g, box, vals, family);
     else if(tpl.id === 'starburst') drawStarburstTemplate(g, box, vals, family);
   }
 
@@ -1177,6 +1186,20 @@
       if(i===0) g.moveTo(x,y); else g.lineTo(x,y);
     }
     g.closePath();
+  }
+
+  // draws the white starburst badge and its character, precisely centered both
+  // horizontally and vertically within the starburst shape
+  function drawStarburstBadge(g, cx, cy, rOuter, rInner, badgeText, family, textColor){
+    starburstPath(g, cx, cy, rOuter, rInner, 9);
+    g.fillStyle = '#ffffff';
+    g.fill();
+    const size = rOuter*0.62;
+    const m = measureLine(g, badgeText, 900, size, family);
+    g.font = `900 ${size}px "${family}"`;
+    g.fillStyle = textColor;
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    g.fillText(badgeText, cx, cy + (m.ascent - m.descent)/2);
   }
 
   function drawIconTagTemplate(g, box, vals, family){
@@ -1227,13 +1250,7 @@
     // starburst badge on the left (sized to clear corner hardware like grommets/ropes)
     const cx = left + w*0.145, cy = (top+bottom)/2;
     const rOuter = h*0.32, rInner = h*0.19;
-    starburstPath(g, cx, cy, rOuter, rInner, 9);
-    g.fillStyle = '#ffffff';
-    g.fill();
-    g.font = `900 ${h*0.24}px "${family}"`;
-    g.fillStyle = style.colors[2];
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(vals.badge, cx, cy + h*0.02);
+    drawStarburstBadge(g, cx, cy, rOuter, rInner, vals.badge, family, style.colors[2]);
 
     // two lines of text to the right of the badge
     const textLeft = left + w*0.27;
@@ -1252,6 +1269,28 @@
     const baseline2 = baseline1 + m1.descent + gapY + m2.ascent;
     drawTextLine(g, vals.line1, textCx, baseline1, 900, s1, family);
     drawTextLine(g, vals.line2, textCx, baseline2, 700, s2, family);
+  }
+
+  function drawStarburstSingleTemplate(g, box, vals, family){
+    const {left,top,right,bottom} = box;
+    const w = right-left, h = bottom-top;
+    const style = currentStyle();
+
+    // starburst badge on the left (sized to clear corner hardware like grommets/ropes)
+    const cx = left + w*0.145, cy = (top+bottom)/2;
+    const rOuter = h*0.32, rInner = h*0.19;
+    drawStarburstBadge(g, cx, cy, rOuter, rInner, vals.badge, family, style.colors[2]);
+
+    // single centered line of text to the right of the badge
+    const textLeft = left + w*0.27;
+    const textRight = right - w*0.08;
+    const textW = textRight - textLeft;
+    const textCx = textLeft + textW/2;
+
+    const s1 = fitFontSize(g, vals.line1, textW*0.96, h*0.40, h*0.16, 900, family);
+    const m1 = measureLine(g, vals.line1, 900, s1, family);
+    const baseline1 = cy + (m1.ascent - m1.descent)/2;
+    drawTextLine(g, vals.line1, textCx, baseline1, 900, s1, family);
   }
 
   function drawThreeLineTemplate(g, box, vals, family){
